@@ -23,17 +23,28 @@ import matplotlib.pyplot as plt
 # (Q2)
 
 def ndiff(fun, x, full=False):
-    
+        
     eps = 1e-7 # Assumption
-    xc = x # But what if x = 0? --> worry later
-    dx = eps**(1/3)*xc # Following from Numerical Recipes
+    
+    fp = np.zeros(len(x))
+    dx = np.zeros(len(x))
+    err = np.zeros(len(x))
+    
+    for i in range(len(x)):
         
-    temp = x + dx
-    dx = temp - x
+        if x[i]==0: x[i] = 1e-10 # Arbitrary offset
         
-    fp = (fun(temp) - fun(x-dx))/(2*dx)
+        xc = x[i] 
+        dx[i] = eps**(1/3)*xc # Following from Numerical Recipes
+                
+        temp = x[i] + dx[i]
+        dx[i] = temp - x[i]
         
-    err = 10
+        fp[i] = (fun(temp) - fun(x[i]-dx[i]))/(2*dx[i]) # fp --> "f prime"        
+        
+        # NEED TO ADD ERROR
+        
+        err[i] = 10 #temporary
     
     if full==False:
         return fp
