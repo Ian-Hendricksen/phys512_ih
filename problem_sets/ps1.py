@@ -31,7 +31,7 @@ def ndiff(fun, x, full=False):
     temp = x + dx
     dx = temp - x
         
-    fp = (fun(temp) - fun(x-dx))/2*dx
+    fp = (fun(temp) - fun(x-dx))/(2*dx)
         
     err = 10
     
