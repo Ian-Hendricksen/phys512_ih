@@ -7,6 +7,7 @@ Created on Thu Sep  9 16:03:39 2021
 
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import interpolate
 
 #-----------------------------------------------------------------------------
 # (Q1)
@@ -66,7 +67,47 @@ V = dat[:, 1]
 # plt.scatter(T,V)
 
 def lakshore(V, data):
-    
+    return V
 
 #-----------------------------------------------------------------------------
 # (Q4)
+
+#----------------------------
+# cos(x)
+
+npt = 8
+xmin = -np.pi/2
+xmax = np.pi/2
+x = np.linspace(xmin, xmax, npt)
+y = np.cos(x)
+
+xx = np.linspace(xmin, xmax, 1000)
+
+# Polynomial:
+    
+X = np.empty([npt, npt])
+for i in range(npt):
+    X[:, i] = x**i
+Xinv = np.linalg.inv(X)
+c = Xinv@y
+
+XX = np.empty([len(xx), npt])
+for i in range(npt):
+    XX[:, i] = xx**i
+y1 = XX@c
+
+# Error?
+
+# Cubic Spline:
+    
+spln = interpolate.splrep(x, y)
+y2 = interpolate.splev(xx, spln)
+    
+# Error?
+
+# Rational
+
+
+
+#----------------------------
+# Lorentzian
