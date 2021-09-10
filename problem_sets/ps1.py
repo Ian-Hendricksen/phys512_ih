@@ -67,8 +67,27 @@ V = dat[:, 1]
 # plt.scatter(T,V)
 
 def lakshore(V, data):
-    return V
+    
+    if type(V) == float or int:
+        V = np.array([V])
+            
+    npt = data.shape[0] # Number of rows in data is number of points (npt)
+    x = data[:, 1].flatten()
+    y = data[:, 0].flatten()
+    
+    X = np.empty([npt, npt])
+    for i in range(npt):
+        X[:, i] = x**i
+    Xinv = np.linalg.inv(X)
+    c = Xinv@y
 
+    XX = np.empty([len(V), npt])
+    for i in range(npt):
+        XX[:, i] = V**i
+    y1 = XX@c
+    
+    return y1
+    
 #-----------------------------------------------------------------------------
 # (Q4)
 
@@ -85,29 +104,61 @@ xx = np.linspace(xmin, xmax, 1000)
 
 # Polynomial:
     
-X = np.empty([npt, npt])
-for i in range(npt):
-    X[:, i] = x**i
-Xinv = np.linalg.inv(X)
-c = Xinv@y
+def polyfit(xx, x, y, npt):
+    
+    X = np.empty([npt, npt])
+    for i in range(npt):
+        X[:, i] = x**i
+        Xinv = np.linalg.inv(X)
+        c = Xinv@y
 
-XX = np.empty([len(xx), npt])
-for i in range(npt):
-    XX[:, i] = xx**i
-y1 = XX@c
+    XX = np.empty([len(xx), npt])
+    for i in range(npt):
+        XX[:, i] = xx**i
+    y1 = XX@c
+    
+    return y1
+
+y1_cos = polyfit(xx, x, y, npt)
 
 # Error?
 
 # Cubic Spline:
     
-spln = interpolate.splrep(x, y)
-y2 = interpolate.splev(xx, spln)
+spln_cos = interpolate.splrep(x, y)
+y2_cos = interpolate.splev(xx, spln_cos)
     
 # Error?
 
-# Rational
+# Rational:
 
 
 
 #----------------------------
 # Lorentzian
+
+npt = 8 # I know this is repetitive, but now I can use different numbers for both functions!
+xmin = -1
+xmax = 1
+x = np.linspace(xmin, xmax, npt)
+y = 1/(1 + x**2)
+
+xx = np.linspace(xmin, xmax, 1000)
+
+# Polynomial:
+
+y1_lor = polyfit(xx, x, y, npt)
+
+# Error?
+
+# Cubic Spline:
+
+spln_lor = interpolate.splrep(x, y)
+y2_lor = interpolate.splev(xx, spln_lor)
+
+# Error?
+
+# Rational:
+    
+    
+
