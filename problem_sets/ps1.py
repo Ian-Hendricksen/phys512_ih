@@ -30,35 +30,21 @@ from scipy import interpolate
 def ndiff(fun, x, full=False):
         
     eps = 1e-16 # Python uses double precision
-    
-    x = np.asarray(x)
+
+    if type(x) == float or int:  
+        x = np.asarray([x])
                 
-    fp = np.zeros(x.size)
-    dx = np.zeros(x.size)
-    err = np.zeros(x.size)
-    
-    """
-    
-    The reason I use size instead of len is because the function should
-    handle floats, ints, and arrays. However, I encountered a lot of issues
-    when trying to convert x to an array if x is a float or int. If I use
-    np.asarray(x) in the way I have now, it does not affect x if it is an
-    array, but will convert a float or int, say 0.5, to array(0.5), which
-    will return TypeError: len() of unsized object. The other alternative is
-    to use np.asarray([x]), but this will convert 1D arrays to 2D arrays.
-    For a 1D array, size is no different from len, so I chose the former.
-    You may ask why I have taken the time to write this, and it is only
-    fuelled by my frustration with the way python chooses to do things.
-    
-    """
-    
-    for i in range(x.size):
+    fp = np.zeros(len(x))
+    dx = np.zeros(len(x))
+    err = np.zeros(len(x))
+        
+    for i in range(len(x)):
         
         if x[i] == 0: x[i] = 1e-10 # Arbitrary offset for cases of 0
         
         xc = x[i] 
         dx[i] = eps**(1/3)*xc # Following from Numerical Recipes
-        
+                
         temp = x[i] + dx[i]
         dx[i] = temp - x[i]
         
@@ -84,9 +70,10 @@ V = dat[:, 1]
 # plt.scatter(V,T)
 
 def lakeshore(V, data):
-        
-    V = np.asarray(V)
-                            
+    
+    if type(V) == float or int:  
+        x = np.asarray([V])
+                                    
     npt = data.shape[0] # Number of rows in data is number of points (npt)
     x = data[:, 1].flatten()
     y = data[:, 0].flatten()
@@ -97,7 +84,7 @@ def lakeshore(V, data):
     Xinv = np.linalg.inv(X)
     c = Xinv@y
 
-    XX = np.empty([V.size, npt]) # Here we see the same size vs. len issue!
+    XX = np.empty([len(V), npt]) # Here we see the same size vs. len issue!
     for i in range(npt):
         XX[:, i] = V**i
     y = XX@c
