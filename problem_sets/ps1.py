@@ -31,13 +31,30 @@ def ndiff(fun, x, full=False):
         
     eps = 1e-16 # Python uses double precision
     
-    fp = np.zeros(len(x))
-    dx = np.zeros(len(x))
-    err = np.zeros(len(x))
+    x = np.asarray(x)
+                
+    fp = np.zeros(x.size)
+    dx = np.zeros(x.size)
+    err = np.zeros(x.size)
     
-    for i in range(len(x)):
+    """
+    
+    The reason I use size instead of len is because the function should
+    handle floats, ints, and arrays. However, I encountered a lot of issues
+    when trying to convert x to an array if x is a float or int. If I use
+    np.asarray(x) in the way I have now, it does not affect x if it is an
+    array, but will convert a float or int, say 0.5, to array(0.5), which
+    will return TypeError: len() of unsized object. The other alternative is
+    to use np.asarray([x]), but this will convert 1D arrays to 2D arrays.
+    For a 1D array, size is no different from len, so I chose the former.
+    You may ask why I have taken the time to write this, and it is only
+    fuelled by my frustration with the way python chooses to do things.
+    
+    """
+    
+    for i in range(x.size):
         
-        if x[i] == 0: x[i] = 1e-10 # Arbitrary offset
+        if x[i] == 0: x[i] = 1e-10 # Arbitrary offset for cases of 0
         
         xc = x[i] 
         dx[i] = eps**(1/3)*xc # Following from Numerical Recipes
@@ -64,29 +81,28 @@ T = dat[:, 0]
 V = dat[:, 1]
 
 # plt.ion()
-# plt.scatter(T,V)
+# plt.scatter(V,T)
 
-def lakshore(V, data):
-    
-    if type(V) == float or int:
-        V = np.array([V])
-            
+def lakeshore(V, data):
+        
+    V = np.asarray(V)
+                            
     npt = data.shape[0] # Number of rows in data is number of points (npt)
     x = data[:, 1].flatten()
     y = data[:, 0].flatten()
-    
+        
     X = np.empty([npt, npt])
     for i in range(npt):
         X[:, i] = x**i
     Xinv = np.linalg.inv(X)
     c = Xinv@y
 
-    XX = np.empty([len(V), npt])
+    XX = np.empty([V.size, npt]) # Here we see the same size vs. len issue!
     for i in range(npt):
         XX[:, i] = V**i
-    y1 = XX@c
+    y = XX@c
     
-    return y1
+    return y
     
 #-----------------------------------------------------------------------------
 # (Q4)
@@ -119,7 +135,7 @@ def polyfit(xx, x, y, npt):
     
     return y1
 
-y1_cos = polyfit(xx, x, y, npt)
+# y1_cos = polyfit(xx, x, y, npt) # I keep getting a singular matrix here
 
 # Error?
 
@@ -137,17 +153,20 @@ y2_cos = interpolate.splev(xx, spln_cos)
 #----------------------------
 # Lorentzian
 
-npt = 8 # I know this is repetitive, but now I can use different numbers for both functions!
+npt = 8 
 xmin = -1
 xmax = 1
 x = np.linspace(xmin, xmax, npt)
 y = 1/(1 + x**2)
 
+# I know this is repetitive, but now I can use different 
+# numbers for each function!
+
 xx = np.linspace(xmin, xmax, 1000)
 
 # Polynomial:
 
-y1_lor = polyfit(xx, x, y, npt)
+# y1_lor = polyfit(xx, x, y, npt) # Singular here too
 
 # Error?
 
