@@ -104,6 +104,7 @@ x = np.linspace(xmin, xmax, npt)
 y = np.cos(x)
 
 xx = np.linspace(xmin, xmax, 1000)
+y_true_cos = np.cos(xx)
 
 # Polynomial:
     
@@ -122,16 +123,16 @@ def polyfit(xx, x, y, npt):
     
     return y1
 
-# y1_cos = polyfit(xx, x, y, npt) # I keep getting a singular matrix here
+y1_cos = polyfit(xx, x, y, npt) # I keep getting a singular matrix here
 
-# Error?
+print('Poly error (cos) = ', np.std(y1_cos - y_true_cos))
 
 # Cubic Spline:
     
 spln_cos = interpolate.splrep(x, y)
 y2_cos = interpolate.splev(xx, spln_cos)
     
-# Error?
+print('Spline error (cos) = ', np.std(y2_cos - y_true_cos))
 
 # Rational:
 
