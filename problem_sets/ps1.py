@@ -16,20 +16,37 @@ from scipy import interpolate
 
 (a)
 
-
+See the pdf under the same problem_sets folder! (titled Phys 512 A1.pdf)
 
 (b)
 
-
+See the same pdf for a derivation of the optimal delta
 
 """
+
+def fpdiff(fun, x): # "four-point differentiator"
+    eps = 1e-16 # Python uses double precision
+    delta = eps**(1/6)
+    fdp = fun(x+delta)
+    fdm = fun(x-delta)
+    f2dp = fun(x+2*delta)
+    f2dm = fun(x-2*delta)
+    return (8*(fdp-fdm) - (f2dp - f2dm))/(12*delta)
+
+x = np.linspace(0.5, 10, 10)
+
+print('(1b) exp(x) error = ', np.std(np.exp(x) - fpdiff(np.exp, x)))
+print('(1b) exp(0.01x) error = ', np.std(0.01*np.exp(0.01*x) - fpdiff(np.exp, 0.01*x)))
+
+# The errors are not terrible, so this seems to be a reasonable assumption
+# for the optimal delta.
 
 #-----------------------------------------------------------------------------
 # (Q2)
 
 def ndiff(fun, x, full=False):
         
-    eps = 1e-16 # Python uses double precision
+    eps = 1e-16
 
     if type(x) == float or int:  
         x = np.asarray([x])
