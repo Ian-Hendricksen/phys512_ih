@@ -31,12 +31,13 @@ def fpdiff(fun, x): # "four-point differentiator"
     fdm = fun(x-delta)
     f2dp = fun(x+2*delta)
     f2dm = fun(x-2*delta)
-    return (8*(fdp-fdm) - (f2dp - f2dm))/(12*delta)
+    return (8*(fdp - fdm) - (f2dp - f2dm))/(12*delta)
 
 x = np.linspace(0.5, 10, 10)
 
 print('(1b) exp(x) error = ', np.std(np.exp(x) - fpdiff(np.exp, x)))
-print('(1b) exp(0.01x) error = ', np.std(0.01*np.exp(0.01*x) - fpdiff(np.exp, 0.01*x)))
+print('(1b) exp(0.01x) error = ', 
+      np.std(0.01*np.exp(0.01*x) - fpdiff(np.exp, 0.01*x)))
 
 # The errors are not terrible, so this seems to be a reasonable assumption
 # for the optimal delta.
@@ -47,16 +48,16 @@ print('(1b) exp(0.01x) error = ', np.std(0.01*np.exp(0.01*x) - fpdiff(np.exp, 0.
 def ndiff(fun, x, full=False):
         
     eps = 1e-16
-
-    if type(x) == float or int:  
+        
+    if type(x) == float or type(x) == int:  
         x = np.asarray([x])
                 
     fp = np.zeros(len(x))
     dx = np.zeros(len(x))
     err = np.zeros(len(x))
-        
+            
     for i in range(len(x)):
-        
+                
         if x[i] == 0: x[i] = 1e-10 # Arbitrary offset for cases of 0
         
         xc = x[i] 
@@ -66,15 +67,23 @@ def ndiff(fun, x, full=False):
         dx[i] = temp - x[i]
         
         fp[i] = (fun(temp) - fun(x[i]-dx[i]))/(2*dx[i]) # fp --> "f prime"        
-        
-        # NEED TO ADD ERROR
-        
-        err[i] = 10 #temporary
+                
+        err[i] = (eps * abs(fun(x[i])))**(1/3)
     
     if full == False:
         return fp
     else:
         return fp, dx, err
+    
+# Let's try this with np.sin:
+    
+fun = np.sin
+x = np.linspace(0, 2*np.pi, 10)
+fp, dx, err = ndiff(fun, x, full = True)
+
+# What's the error w.r.t. (d/dx)np.sin(x) = np.cos(x)?
+
+print('Error between ndiff and real fun = ', np.std(np.cos(x) - fp))
 
 #-----------------------------------------------------------------------------
 # (Q3)
@@ -88,7 +97,7 @@ V = dat[:, 1]
 
 def lakeshore(V, data):
     
-    if type(V) == float or int:  
+    if type(V) == float or type(V) == int:  
         x = np.asarray([V])
                                     
     npt = data.shape[0] # Number of rows in data is number of points (npt)
@@ -185,4 +194,3 @@ y2_lor = interpolate.splev(xx, spln_lor)
 # Rational:
     
     
-
