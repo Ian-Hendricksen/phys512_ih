@@ -83,37 +83,44 @@ fp, dx, err = ndiff(fun, x, full = True)
 
 # What's the error w.r.t. (d/dx)np.sin(x) = np.cos(x)?
 
-print('Error between ndiff and real fun = ', np.std(np.cos(x) - fp))
+print('(2) Error between ndiff and real fun = ', np.std(np.cos(x) - fp))
 
 #-----------------------------------------------------------------------------
 # (Q3)
 
 dat = np.loadtxt('lakeshore.txt')
-T = dat[:, 0]
-V = dat[:, 1]
-
-# plt.ion()
-# plt.scatter(V,T)
+# T = dat[:, 0]
+# V = dat[:, 1]
 
 def lakeshore(V, data):
     
-    if type(V) == float or type(V) == int:  
-        x = np.asarray([V])
+    T = dat[:, 0]
+    Vo = dat[:, 1]
+    
+    # if type(V) == float or type(V) == int:  
+    #     x = np.asarray([V])
                                     
-    npt = data.shape[0] # Number of rows in data is number of points (npt)
-    x = data[:, 1].flatten()
-    y = data[:, 0].flatten()
+    # npt = data.shape[0] # Number of rows in data is number of points (npt)
+    # x = data[:, 1].flatten()
+    # y = data[:, 0].flatten()
         
-    X = np.empty([npt, npt])
-    for i in range(npt):
-        X[:, i] = x**i
-    Xinv = np.linalg.inv(X)
-    c = Xinv@y
+    # X = np.empty([npt, npt])
+    # for i in range(npt):
+    #     X[:, i] = x**i
+    # Xinv = np.linalg.inv(X)
+    # c = Xinv@y
 
-    XX = np.empty([len(V), npt]) # Here we see the same size vs. len issue!
-    for i in range(npt):
-        XX[:, i] = V**i
-    y = XX@c
+    # XX = np.empty([len(V), npt]) # Here we see the same size vs. len issue!
+    # for i in range(npt):
+    #     XX[:, i] = V**i
+    # y = XX@c
+    
+    spln = interpolate.splrep(Vo[::-1], T[::-1]) # Set up spline, which gives an
+                                                # annoying error if V & T are 
+                                                # not rearranged in ascending
+                                                # order
+                                                
+    y = interpolate.splev(V, spln)
     
     return y
     
