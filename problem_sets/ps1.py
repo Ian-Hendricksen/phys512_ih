@@ -83,7 +83,7 @@ fp, dx, err = ndiff(fun, x, full = True)
 
 # What's the error w.r.t. (d/dx)np.sin(x) = np.cos(x)?
 
-print('(2) Error between ndiff and real fun = ', np.std(np.cos(x) - fp))
+print('(2) Error between ndiff and real f\' = ', np.std(np.cos(x) - fp))
 
 #-----------------------------------------------------------------------------
 # (Q3)
@@ -141,14 +141,14 @@ def lakeshore(V, data):
 #----------------------------
 # cos(x)
 
-npt = 8
+npt = 9
 xmin = -np.pi/2
 xmax = np.pi/2
 x = np.linspace(xmin, xmax, npt)
 y = np.cos(x)
 
 xx = np.linspace(xmin, xmax, 1000)
-y_true_cos = np.cos(xx)
+ytrue_cos = np.cos(xx)
 
 # Polynomial:
     
@@ -168,44 +168,77 @@ def polyfit(xx, x, y, npt):
     return y1
 
 yp_cos = polyfit(xx, x, y, npt) # 'y poly cos'
-print('(4) Poly error (cos) = ', np.std(yp_cos - y_true_cos))
+print('(4) Poly error (cos) = ', np.std(yp_cos - ytrue_cos))
 
 # Cubic Spline:
     
 spln_cos = interpolate.splrep(x, y)
 ys_cos = interpolate.splev(xx, spln_cos) # 'y spline cos'
-print('(4) Spline error (cos) = ', np.std(ys_cos - y_true_cos))
+print('(4) Spline error (cos) = ', np.std(ys_cos - ytrue_cos))
 
 # Rational:
 
+def rat_eval(p,q,x): # Using Jon's rat_eval & rat_fit from class...
+    top=0
+    for i in range(len(p)):
+        top=top+p[i]*x**i
+    bot=1
+    for i in range(len(q)):
+        bot=bot+q[i]*x**(i+1)
+    return top/bot
 
+def rat_fit(x,y,n,m):
+    assert(len(x)==n+m-1)
+    assert(len(y)==len(x))
+    mat=np.zeros([n+m-1,n+m-1])
+    for i in range(n):
+        mat[:,i]=x**i
+    for i in range(1,m):
+        mat[:,i-1+n]=-y*x**i
+    pars=np.dot(np.linalg.inv(mat),y)
+    p=pars[:n]
+    q=pars[n:]
+    return p,q
+
+n = 4
+m = 6 # Need to ensure n+m-1 = npt
+p, q = rat_fit(x, y, n, m)
+
+yr_cos = rat_eval(p, q, xx) # 'y rational cos'
+print('(4) Rational error (cos) = ', np.std(yr_cos - ytrue_cos))
 
 #----------------------------
 # Lorentzian
 
-npt = 8 
 xmin = -1
 xmax = 1
 x = np.linspace(xmin, xmax, npt)
 y = 1/(1 + x**2)
 
-xx = np.linspace(xmin, xmax, 1000)
-y_true_lor = 1/(1+xx**2)
-
-# I know this is repetitive, but now I can use different 
-# numbers for each function!
+xx = np.linspace(xmin, xmax, 1000) # need to "reset" xx with new xmin/xmax
+ytrue_lor = 1/(1+xx**2)
 
 # Polynomial:
 
 yp_lor = polyfit(xx, x, y, npt) # Singular here too
-print('(4) Poly error (Lorentzian) = ', np.std(yp_lor - y_true_lor))
+print('(4) Poly error (Lorentzian) = ', np.std(yp_lor - ytrue_lor))
 
 # Cubic Spline:
 
 spln_lor = interpolate.splrep(x, y)
 ys_lor = interpolate.splev(xx, spln_lor)
-print('(4) Spline error (Lorentzian) = ', np.std(ys_lor - y_true_lor))
+print('(4) Spline error (Lorentzian) = ', np.std(ys_lor - ytrue_lor))
 
 # Rational:
     
+# This is really bad!
     
+p, q = rat_fit(x, y, n, m)
+yr_lor = rat_eval(p, q, xx) # 'y rational lor'
+print('(4) Rational error (Lorentzian) = ', np.std(yr_lor - ytrue_cos)) 
+
+"""
+
+
+
+"""
