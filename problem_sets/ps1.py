@@ -89,13 +89,19 @@ print('(2) Error between ndiff and real fun = ', np.std(np.cos(x) - fp))
 # (Q3)
 
 dat = np.loadtxt('lakeshore.txt')
-# T = dat[:, 0]
-# V = dat[:, 1]
+T = dat[:, 0]
+Vo = dat[:, 1]
 
 def lakeshore(V, data):
     
     T = dat[:, 0]
     Vo = dat[:, 1]
+    
+    #----------------------------
+    
+    # I originally tried using polynomial interpolation, but this turned out 
+    # pretty bad (probably because the data has a kink and has some
+    # oscillating behavior):
     
     # if type(V) == float or type(V) == int:  
     #     x = np.asarray([V])
@@ -115,12 +121,17 @@ def lakeshore(V, data):
     #     XX[:, i] = V**i
     # y = XX@c
     
-    spln = interpolate.splrep(Vo[::-1], T[::-1]) # Set up spline, which gives an
-                                                # annoying error if V & T are 
-                                                # not rearranged in ascending
-                                                # order
+    #----------------------------
+    
+    # Set up spline, which gives an annoying error if V & T are 
+    # not rearranged in ascending order, hence we have Vo[::-1]
+    # to reverse the order
+    
+    spln = interpolate.splrep(Vo[::-1], T[::-1]) 
                                                 
     y = interpolate.splev(V, spln)
+    
+    # Error?
     
     return y
     
@@ -156,16 +167,14 @@ def polyfit(xx, x, y, npt):
     
     return y1
 
-y1_cos = polyfit(xx, x, y, npt) # I keep getting a singular matrix here
-
-print('Poly error (cos) = ', np.std(y1_cos - y_true_cos))
+yp_cos = polyfit(xx, x, y, npt) # 'y poly cos'
+print('(4) Poly error (cos) = ', np.std(yp_cos - y_true_cos))
 
 # Cubic Spline:
     
 spln_cos = interpolate.splrep(x, y)
-y2_cos = interpolate.splev(xx, spln_cos)
-    
-print('Spline error (cos) = ', np.std(y2_cos - y_true_cos))
+ys_cos = interpolate.splev(xx, spln_cos) # 'y spline cos'
+print('(4) Spline error (cos) = ', np.std(ys_cos - y_true_cos))
 
 # Rational:
 
@@ -180,23 +189,22 @@ xmax = 1
 x = np.linspace(xmin, xmax, npt)
 y = 1/(1 + x**2)
 
+xx = np.linspace(xmin, xmax, 1000)
+y_true_lor = 1/(1+xx**2)
+
 # I know this is repetitive, but now I can use different 
 # numbers for each function!
 
-xx = np.linspace(xmin, xmax, 1000)
-
 # Polynomial:
 
-# y1_lor = polyfit(xx, x, y, npt) # Singular here too
-
-# Error?
+yp_lor = polyfit(xx, x, y, npt) # Singular here too
+print('(4) Poly error (Lorentzian) = ', np.std(yp_lor - y_true_lor))
 
 # Cubic Spline:
 
 spln_lor = interpolate.splrep(x, y)
-y2_lor = interpolate.splev(xx, spln_lor)
-
-# Error?
+ys_lor = interpolate.splev(xx, spln_lor)
+print('(4) Spline error (Lorentzian) = ', np.std(ys_lor - y_true_lor))
 
 # Rational:
     
