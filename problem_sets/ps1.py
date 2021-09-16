@@ -103,8 +103,8 @@ def lakeshore(V, data):
     # pretty bad (probably because the data has a kink and has some
     # oscillating behavior):
     
-    # if type(V) == float or type(V) == int:  
-    #     x = np.asarray([V])
+    if type(V) == float or type(V) == int:  
+        V = np.asarray([V])
                                     
     # npt = data.shape[0] # Number of rows in data is number of points (npt)
     # x = data[:, 1].flatten()
@@ -128,12 +128,59 @@ def lakeshore(V, data):
     # to reverse the order
     
     spln = interpolate.splrep(Vo[::-1], T[::-1]) 
-                                                
     y = interpolate.splev(V, spln)
     
-    # Error?
+    # Error (using bootstrap resampling):
+                
+    B = 10 # number of resamples
+    n = 50 # number of samples per resample
+    new_y = np.zeros([B, len(V)]) # An array to hold interpolated y values,
+                                  # where each row is a new set of resampled 
+                                  # data. Each column is associated with the 
+                                  # same value of V
+            
+    for i in range(B):
+        
+        # As a bit of a narrative, the following method to randomly
+        # select some indices and choose them from Vo and T produced
+        # garbage results for many hours until I wrote "replace = False"... 
+        # a mistake to never make again!
+        
+        indices = np.random.choice(len(Vo), n, replace = False) # Grab random indices
+                                     
+        Vsamps = Vo[indices] # Use random indices to select raw data values
+        Tsamps = T[indices]
+        
+        sort_inds = np.argsort(Vsamps) # Grab sorted indices
+        
+        Vsamps = Vsamps[sort_inds] # Sort x and y data for splrep
+        Tsamps = Tsamps[sort_inds]
+                                                                
+        new_spln = interpolate.splrep(Vsamps, Tsamps) 
+        new_y[i] = interpolate.splev(V, new_spln)
+        
+    errs = np.zeros(len(V)) # Empty array for errors
     
-    return y
+    for i in range(len(V)):
+        errs[i] = np.std(new_y[:,i]) # Determine std dev of each column of 
+                                     # new_y, which contains each resampled 
+                                     # interpolated value associated with a
+                                     # specific V
+                                        
+    return y, errs
+
+V = np.linspace(min(Vo), max(Vo), 100)
+Tnew, Tnew_errs = lakeshore(V, dat)
+
+plt.plot(V, Tnew, label = 'Interpolated Data')
+plt.scatter(Vo, T, label = 'Raw Data')
+plt.errorbar(V, Tnew, yerr = Tnew_errs, fmt = 'none', label = 'Errors on Interpolated Vals')
+plt.xlabel('V')
+plt.ylabel('T')
+plt.title('Interpolated Lakeshore Data')
+plt.legend()
+
+print('(3) Mean error on interpolated T\'s =', np.mean(Tnew_errs))
     
 #-----------------------------------------------------------------------------
 # (Q4)
