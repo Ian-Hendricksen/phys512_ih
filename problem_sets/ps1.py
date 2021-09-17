@@ -69,7 +69,8 @@ def ndiff(fun, x, full=False):
         
         fp[i] = (fun(temp) - fun(x[i]-dx[i]))/(2*dx[i]) # fp --> "f prime"        
                 
-        err[i] = (eps * abs(fun(x[i])))**(1/3)
+        err[i] = (eps * abs(fun(x[i])))**(1/3) # Eq. 5.7.9 (note that I am not 
+                                               # using the fractional error)
     
     if full == False:
         return fp
