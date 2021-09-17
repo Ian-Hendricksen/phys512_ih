@@ -162,7 +162,7 @@ def lakeshore(V, data):
         new_y[i] = interpolate.splev(V, new_spln)
         
     errs = np.zeros(len(V)) # Empty array for errors
-    
+        
     for i in range(len(V)):
         errs[i] = np.std(new_y[:,i]) # Determine std dev of each column of 
                                      # new_y, which contains each resampled 
@@ -253,7 +253,8 @@ def rat_fit(x,y,n,m):
     return p,q
 
 n = 4
-m = 6 # Need to ensure n+m-1 = npt
+m = npt+1-n # Need to ensure n+m-1 = npt
+assert(n<m) # Interpolated values need to die as x --> inf
 p, q = rat_fit(x, y, n, m)
 
 yr_cos = rat_eval(p, q, xx) # 'y rational cos'
@@ -308,17 +309,26 @@ print(f'(4) Best error for Lorentzian fits is {function[min_ind_lor]}')
 
 """
 
+The error for the Lorentzian rational function fit should ideally be 0 
+since the Lorentzian itself is a rational function, with p(x) = 1 and
+q(x) = 1 + 0x + 1x**2 (I'm a little confused as to how to write p
+and q in the manner that Jon set things up - he writes p = [1,2] and
+q = [0,1,2], but I would expect it to be something like p = [1], and
+q = [0,2], since we don't count the 1 in --> 1 + ax +bx^2 + cx^3 + ...).
+
 The error for the Lorentzian rational function fit should be improved
 (smaller) in comparison to the polynomial and cubic spline fits, since
 a Lorentzian contains poles at +/- i in the complex plane, and only a 
-rational function (of the 3 fits) has poles itself.
+rational function (of the 3 fits) has poles itself. When the order is higher,
+the error appears
 
 Switching from inv to pinv improves the quality of the rational function
 fit (reduces the error). We notice a stark difference in p and q when 
 comparing the use of inv and pinv; for inv, p and q are much larger (in this
 case, some on the order of 1e16 or higher), while for pinv, p and q are much 
 smaller (either around 1e-1 or 1e-16). This is likely related to the removal
-of larger eigenvalues in A^-1, since 
+of larger eigenvalues in A^-1, which is (I believe) directly related to the
+coefficients for p and q. 
 
 
 """
