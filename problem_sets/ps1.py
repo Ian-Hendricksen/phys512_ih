@@ -38,6 +38,7 @@ x = np.linspace(0.5, 10, 10)
 print('(1b) exp(x) error = ', np.std(np.exp(x) - fpdiff(np.exp, x)))
 print('(1b) exp(0.01x) error = ', 
       np.std(0.01*np.exp(0.01*x) - fpdiff(np.exp, 0.01*x)))
+print('----------------------------')
 
 # The errors are not terrible, so this seems to be a reasonable assumption
 # for the optimal delta.
@@ -84,6 +85,7 @@ fp, dx, err = ndiff(fun, x, full = True)
 # What's the error w.r.t. (d/dx)np.sin(x) = np.cos(x)?
 
 print('(2) Error between ndiff and real f\' = ', np.std(np.cos(x) - fp))
+print('----------------------------')
 
 #-----------------------------------------------------------------------------
 # (Q3)
@@ -180,7 +182,8 @@ plt.ylabel('T')
 plt.title('Interpolated Lakeshore Data')
 plt.legend()
 
-print('(3) Mean error on interpolated T\'s =', np.mean(Tnew_errs))
+print('(3) Mean error on interpolated temperatures =', np.mean(Tnew_errs))
+print('----------------------------')
     
 #-----------------------------------------------------------------------------
 # (Q4)
@@ -215,13 +218,15 @@ def polyfit(xx, x, y, npt):
     return y1
 
 yp_cos = polyfit(xx, x, y, npt) # 'y poly cos'
-print('(4) Poly error (cos) = ', np.std(yp_cos - ytrue_cos))
+yp_cos_err = np.std(yp_cos - ytrue_cos)
+print('(4) Poly error (cos) = ', yp_cos_err)
 
 # Cubic Spline:
     
 spln_cos = interpolate.splrep(x, y)
 ys_cos = interpolate.splev(xx, spln_cos) # 'y spline cos'
-print('(4) Spline error (cos) = ', np.std(ys_cos - ytrue_cos))
+ys_cos_err = np.std(ys_cos - ytrue_cos)
+print('(4) Spline error (cos) = ', ys_cos_err)
 
 # Rational:
 
@@ -242,7 +247,7 @@ def rat_fit(x,y,n,m):
         mat[:,i]=x**i
     for i in range(1,m):
         mat[:,i-1+n]=-y*x**i
-    pars=np.dot(np.linalg.inv(mat),y)
+    pars=np.dot(np.linalg.pinv(mat),y)
     p=pars[:n]
     q=pars[n:]
     return p,q
@@ -252,7 +257,15 @@ m = 6 # Need to ensure n+m-1 = npt
 p, q = rat_fit(x, y, n, m)
 
 yr_cos = rat_eval(p, q, xx) # 'y rational cos'
-print('(4) Rational error (cos) = ', np.std(yr_cos - ytrue_cos))
+yr_cos_err = np.std(yr_cos - ytrue_cos)
+print('(4) Rational error (cos) = ', yr_cos_err)
+
+# Comparison
+
+function = np.array(['Polynomial', 'Spline', 'Rational'])
+q4cos_errs = np.array([yp_cos_err, ys_cos_err, yr_cos_err])
+min_ind_cos = np.argmin(q4cos_errs)
+print(f'(4) Best error for cos fits is {function[min_ind_cos]}')
 
 #----------------------------
 # Lorentzian
@@ -268,13 +281,15 @@ ytrue_lor = 1/(1+xx**2)
 # Polynomial:
 
 yp_lor = polyfit(xx, x, y, npt) # Singular here too
-print('(4) Poly error (Lorentzian) = ', np.std(yp_lor - ytrue_lor))
+yp_lor_err = np.std(yp_lor - ytrue_lor)
+print('(4) Poly error (Lorentzian) = ', yp_lor_err)
 
 # Cubic Spline:
 
 spln_lor = interpolate.splrep(x, y)
 ys_lor = interpolate.splev(xx, spln_lor)
-print('(4) Spline error (Lorentzian) = ', np.std(ys_lor - ytrue_lor))
+ys_lor_err = np.std(ys_lor - ytrue_lor)
+print('(4) Spline error (Lorentzian) = ', ys_lor_err)
 
 # Rational:
     
@@ -282,10 +297,28 @@ print('(4) Spline error (Lorentzian) = ', np.std(ys_lor - ytrue_lor))
     
 p, q = rat_fit(x, y, n, m)
 yr_lor = rat_eval(p, q, xx) # 'y rational lor'
-print('(4) Rational error (Lorentzian) = ', np.std(yr_lor - ytrue_cos)) 
+yr_lor_err = np.std(yr_lor - ytrue_cos)
+print('(4) Rational error (Lorentzian) = ', yr_lor_err) 
+
+# Comparison
+
+q4lor_errs = np.array([yp_lor_err, ys_lor_err, yr_lor_err])
+min_ind_lor = np.argmin(q4lor_errs)
+print(f'(4) Best error for Lorentzian fits is {function[min_ind_lor]}')
 
 """
 
+The error for the Lorentzian rational function fit should be improved
+(smaller) in comparison to the polynomial and cubic spline fits, since
+a Lorentzian contains poles at +/- i in the complex plane, and only a 
+rational function (of the 3 fits) has poles itself.
+
+Switching from inv to pinv improves the quality of the rational function
+fit (reduces the error). We notice a stark difference in p and q when 
+comparing the use of inv and pinv; for inv, p and q are much larger (in this
+case, some on the order of 1e16 or higher), while for pinv, p and q are much 
+smaller (either around 1e-1 or 1e-16). This is likely related to the removal
+of larger eigenvalues in A^-1, since 
 
 
 """
