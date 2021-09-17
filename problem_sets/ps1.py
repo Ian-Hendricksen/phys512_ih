@@ -159,8 +159,8 @@ def lakeshore(V, data):
         Vsamps = Vsamps[sort_inds] # Sort x and y data for splrep
         Tsamps = Tsamps[sort_inds]
                                                                 
-        new_spln = interpolate.splrep(Vsamps, Tsamps) 
-        new_y[i] = interpolate.splev(V, new_spln)
+        new_spln = interpolate.splrep(Vsamps, Tsamps) # Set up new subsampled spline
+        new_y[i] = interpolate.splev(V, new_spln) # Evaluate subsampled spline at V
         
     errs = np.zeros(len(V)) # Empty array for errors
         
@@ -203,7 +203,7 @@ ytrue_cos = np.cos(xx)
 
 # Polynomial:
     
-def polyfit(xx, x, y, npt):
+def polyfit(xx, x, y, npt): # Following the matrix method as seen in class
     
     X = np.empty([npt, npt])
     for i in range(npt):
