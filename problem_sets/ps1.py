@@ -321,7 +321,9 @@ The error for the Lorentzian rational function fit should be improved
 (smaller) in comparison to the polynomial and cubic spline fits, since
 a Lorentzian contains poles at +/- i in the complex plane, and only a 
 rational function (of the 3 fits) has poles itself. When the order is higher,
-the error appears
+the error appears to go down, which I would not expect for a Lorentzian
+given that it can be perfectly described by a low-order rational function
+as discussed above.
 
 Switching from inv to pinv improves the quality of the rational function
 fit (reduces the error). We notice a stark difference in p and q when 
