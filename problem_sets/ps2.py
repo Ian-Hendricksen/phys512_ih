@@ -25,15 +25,7 @@ def eval_E_quad(z, R, sigma):
     
     for i in range(len(z)):
     
-        if z[i] < R:
-            E[i] = 0
-            err[i] = 0
-            
-        # elif z == R:
-        #     the = 1 # temp
-            
-        else: # i.e. z >= R
-            u = np.linspace(-1, 1, 1000)
+            u = [-1,1]
             
             def integ(u):
                 return (z[i] - R*u)/(R**2 + z[i]**2 - 2*R*z[i]*u)**(3/2)
@@ -45,11 +37,41 @@ def eval_E_quad(z, R, sigma):
     
     return E, err
 
-z = np.linspace(0, 10, 1000)
-R = 1
+n = 25
+R = 1 # m
 sigma = 1 # C/m^2
 
-plt.plot(z, eval_E_quad(z,R,sigma)[0])
+z = np.linspace(0, 10, n) # m
+z = np.insert(z, n, R) # This makes sure there is a point where z = R
+z.sort()
+
+E_quad, E_quad_err = eval_E_quad(z, R, sigma)
+print('Quad error:', np.std(E_quad_err))
+
+# Evaluate using my own integrator:
+    
+    
+
+plt.scatter(z, E_quad, label = 'quad')
+plt.xlabel('z')
+plt.ylabel('E')
+plt.title(f'Spherical Shell E-Field, R = {R}, $\sigma$ = {sigma}')
+plt.legend()
+
+"""
+
+There is indeed a singularity at z = R since there is a 1/|z-R| term
+that pops out after integration, which goes to infinity at that point.
+However, quad doesn't seem to care that such a point blows up, although
+this could result from the fact that the singularity is apparent after 
+integrating as opposed to being under the integral, since for z = R the
+integrand is:
+    
+    z(1-u)/(2z^2(1-u))^(3/2) # Check this assumption is correct
+
+
+"""
+
 
 #-----------------------------------------------------------------------------
 # (Q2)
