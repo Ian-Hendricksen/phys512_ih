@@ -113,8 +113,70 @@ print('#-------------------------------------')
 #-----------------------------------------------------------------------------
 # (Q2)
 
-# def integrate_adaptive(fun, a, b, tol, extra = None):
-
+def integrate_adaptive(fun, a, b, tol, extra = None):
+    
+    print('integrating between ', a, b)
+    x = np.linspace(a, b, 5)
+    dx = (b - a)/(len(x) - 1)
+    
+    if extra == None:
+        y = fun(x)
+        area1 = 2*dx*(y[0] + 4*y[2] + y[4])/3 # coarse step
+        area2 = dx*(y[0] + 4*y[1] + 2*y[2] + 4*y[3] + y[4])/3 # finer step
+        err = np.abs(area1 - area2)
+        
+    else:
+        for i in range(len(extra[0, :])):
+            index = np.where(extra[0, :][i] == x)
+            x = np.delete(x, index)
+        
+        y = fun(x)
+        
+        x = np.concatenate((x, extra[0, :]))
+        x = np.sort(x)
+        
+        y = np.concatenate((y, extra[1, :]))
+        y = np.sort(y)
+        
+        area1 = 2*dx*(y[0] + 4*y[2] + y[4])/3 # coarse step
+        area2 = dx*(y[0] + 4*y[1] + 2*y[2] + 4*y[3] + y[4])/3 # finer step
+        err = np.abs(area1 - area2)
+        
+    if err < tol:
+        return area2
+    
+    else:
+        xmid = (a + b)/2
+        xl = np.linspace(a, xmid, 5)
+        xr = np.linspace(xmid, b, 5)
+        
+        extra_xl = []
+        extra_yl = []
+        
+        extra_xr = []
+        extra_yr = []
+        
+        for i in range(len(xl)):
+            index = np.where(xl[i] == x)
+            extra_xl.append(x[index])
+            extra_yl.append(y[index])
+            
+        for i in range(len(xr)):
+            index = np.where(xr[i] == x)
+            extra_xr.append(x[index])
+            extra_yr.append(y[index])
+        
+        extra_l = np.vstack((extra_xl, extra_yl))
+        extra_r = np.vstack((extra_xr, extra_yr))
+        
+        left = integrate_adaptive(fun, a, xmid, tol/2, extra = extra_l)
+        right = integrate_adaptive(fun, xmid, b, tol/2, extra = extra_r)
+        
+        return left + right
+    
+a = -100
+b = 100
+print(integrate_adaptive(np.exp, a, b, 1e-7))
 
 #-----------------------------------------------------------------------------
 # (Q3)
@@ -188,9 +250,14 @@ def cheb_log2(xx):
 xx = np.linspace(0.5, 1, 100)
 # plt.plot(xx, np.log2(xx))
 # plt.scatter(xx, cheb_log2(xx))
-print(np.std(np.log2(xx) - cheb_log2(xx)))
+# print(np.std(np.log2(xx) - cheb_log2(xx)))
 
 # Evaluate ln(x) for any positive number:
     
-# def mylog2(x):
+def mylog2(x):
     
+    e = np.exp(1)
+    
+    # np.frexp returns (mantissa, exponent), where x = mantissa * 2**exponent`. 
+    # The mantissa lies in the open interval(-1, 1), while the twos exponent 
+    # is a signed integer.
