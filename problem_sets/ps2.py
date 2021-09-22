@@ -8,6 +8,7 @@ Created on Sun Sep 19 15:12:27 2021
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import integrate
+from scipy import interpolate
 
 #-----------------------------------------------------------------------------
 # (Q1)
@@ -119,19 +120,60 @@ print('#-------------------------------------')
 # (Q3)
 
 def cheb_log2(xx):
+    
     n = 150
     x = np.linspace(0.5, 1, 1000)
-    x_resc = np.interp(x, (min(x), max(x)), (-1, +1))
+    # x_resc = np.interp(x, (min(x), max(x)), (-1, +1))
     y = np.log2(x)
     # y = np.log2(x_resc)
     coeffs = np.polynomial.chebyshev.chebfit(x, y, n)
-    print(coeffs)
     yy = np.polynomial.chebyshev.chebval(xx, coeffs)
-    max_errs = np.zeros(n)
+    
+    """
+    I first tried applying the method to find the minimum number of
+    coefficients needed from Jon's polynomial notes, but decided it
+    was easier to evaluate yy for each number of coefficients - i.e. 
+    I evaluate yy many times, looping through the number of coefficients
+    from 0 to n, define some tolerance, then ask python to find the 
+    number of coefficients corresponding with the first instance where
+    the error drops below the tolerance.
+    """
+    
+    #-----------------------
+    
+    # max_errs = np.zeros(n)
+    # for i in range(n):
+    #     max_errs[i] = np.sum(abs(coeffs[-i+1:])) # the errs are in descending order w.r.t. coeffs
+    # max_errs = max_errs[::-1] # return to ascending order w.r.t. coeffs
+    # cutoff_index= np.where(max_errs < 1e-4)[0][0]
+    # coeffs = coeffs[:cutoff_index+1]
+    # yy = np.polynomial.chebyshev.chebval(xx, coeffs)
+    
+    #-----------------------
+    
+    # Routine to check errors for truncated coefficients:
+    
+    trunc_errs = np.zeros(n)
+    
     for i in range(n):
-        max_errs[i] = np.sum(abs(coeffs[-i:]))
-    print(max_errs)
-    return yy
+        trunc_coeffs = coeffs[:i+1]
+        yyy = np.polynomial.chebyshev.chebval(xx, trunc_coeffs)
+        trunc_errs[i] = abs(np.std(yyy - np.log2(xx)))
+    
+    tol = 1e-3 # arbitrarily set tolerance/error threshold
+        
+    tol_inds = np.where(trunc_errs < tol)[0] # get indices where the error is
+                                             # less than tol
+                                                 
+    if len(tol_inds) == 0:
+        return yy # if tol_inds is empty, the only # of coeffs < tol is n
+    else:
+        tol_index = tol_inds[0]
+        tol_coeffs = coeffs[:tol_index] # gather the coefficients up to this index
+        yy = np.polynomial.chebyshev.chebval(xx, tol_coeffs) # re-evaluate yy with
+                                                             # truncated coeffs                                       
+        
+        return yy
     
 xx = np.linspace(0.5, 1, 100)
 # plt.plot(xx, np.log2(xx))
