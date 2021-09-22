@@ -125,9 +125,17 @@ def cheb_log2(xx):
     
     n = 150
     x = np.linspace(0.5, 1, 1000)
+    
+    def scale(x, out_range=(-1, 1)):
+        domain = np.min(x), np.max(x)
+        y = (x - (domain[1] + domain[0]) / 2) / (domain[1] - domain[0])
+        return y * (out_range[1] - out_range[0]) + (out_range[1] + out_range[0]) / 2
+    
+    x_resc = scale(x)
     # x_resc = np.interp(x, (min(x), max(x)), (-1, +1))
-    y = np.log2(x)
-    # y = np.log2(x_resc)
+    y = np.log2(x_resc)
+    
+    # y = np.log2(x)
     coeffs = np.polynomial.chebyshev.chebfit(x, y, n)
     yy = np.polynomial.chebyshev.chebval(xx, coeffs)
     
@@ -181,3 +189,8 @@ xx = np.linspace(0.5, 1, 100)
 # plt.plot(xx, np.log2(xx))
 # plt.scatter(xx, cheb_log2(xx))
 print(np.std(np.log2(xx) - cheb_log2(xx)))
+
+# Evaluate ln(x) for any positive number:
+    
+# def mylog2(x):
+    
