@@ -118,8 +118,8 @@ def integrate_adaptive(fun, a, b, tol, extra = None):
     print('integrating between ', a, b)
     x = np.linspace(a, b, 5)
     dx = (b - a)/(len(x) - 1)
-    
-    if extra == None:
+        
+    if type(extra) == type(None):
         y = fun(x)
         area1 = 2*dx*(y[0] + 4*y[2] + y[4])/3 # coarse step
         area2 = dx*(y[0] + 4*y[1] + 2*y[2] + 4*y[3] + y[4])/3 # finer step
@@ -127,11 +127,11 @@ def integrate_adaptive(fun, a, b, tol, extra = None):
         
     else:
         for i in range(len(extra[0, :])):
-            index = np.where(extra[0, :][i] == x)
+            index = np.where(extra[0, :][i] == x)[0][0]
             x = np.delete(x, index)
         
         y = fun(x)
-        
+                
         x = np.concatenate((x, extra[0, :]))
         x = np.sort(x)
         
@@ -141,6 +141,10 @@ def integrate_adaptive(fun, a, b, tol, extra = None):
         area1 = 2*dx*(y[0] + 4*y[2] + y[4])/3 # coarse step
         area2 = dx*(y[0] + 4*y[1] + 2*y[2] + 4*y[3] + y[4])/3 # finer step
         err = np.abs(area1 - area2)
+        
+        # if err < tol:
+        #     return area2
+        
         
     if err < tol:
         return area2
@@ -156,19 +160,26 @@ def integrate_adaptive(fun, a, b, tol, extra = None):
         extra_xr = []
         extra_yr = []
         
-        for i in range(len(xl)):
-            index = np.where(xl[i] == x)
-            extra_xl.append(x[index])
-            extra_yl.append(y[index])
+        # for i in range(len(xl)):
+        #     index = np.where(xl[i] == x)[0][0]
+        #     print(index)
+        #     extra_xl.append(x[index])
+        #     extra_yl.append(y[index])
             
-        for i in range(len(xr)):
-            index = np.where(xr[i] == x)
-            extra_xr.append(x[index])
-            extra_yr.append(y[index])
+        extra_xl = x[np.where(xl == x)[0]]
+        extra_xr = x[np.where(xr == x)[0]]
         
+        extra_yl = y[np.where(xl == x)[0]]
+        extra_yr = y[np.where(xr == x)[0]]
+            
+        # for i in range(len(xr)):
+        #     index = np.where(xr[i] == x)[0][0]
+        #     extra_xr.append(x[index])
+        #     extra_yr.append(y[index])
+                    
         extra_l = np.vstack((extra_xl, extra_yl))
         extra_r = np.vstack((extra_xr, extra_yr))
-        
+                        
         left = integrate_adaptive(fun, a, xmid, tol/2, extra = extra_l)
         right = integrate_adaptive(fun, xmid, b, tol/2, extra = extra_r)
         
