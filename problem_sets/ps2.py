@@ -166,7 +166,7 @@ def cheb_log2(xx):
                                              # less than tol
                                                  
     if len(tol_inds) == 0:
-        return yy # if tol_inds is empty, the only # of coeffs < tol is n
+        return yy # if tol_inds is empty, the only # of coeffs with err < tol is n
     else:
         tol_index = tol_inds[0]
         tol_coeffs = coeffs[:tol_index] # gather the coefficients up to this index
