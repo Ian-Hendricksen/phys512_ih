@@ -47,7 +47,8 @@ z = np.insert(z, n, R) # This makes sure there is a point where z = R
 z.sort()
 
 E_quad, E_quad_err = eval_E_quad(z, R, sigma)
-print('(1) Quad error:', np.std(E_quad_err))
+print('(1)')
+print('Quad error:', np.std(E_quad_err))
 
 # Evaluate using Legendre:
     
@@ -113,69 +114,81 @@ print('#-------------------------------------')
 #-----------------------------------------------------------------------------
 # (Q2)
 
-def integrate_adaptive(fun, a, b, tol, extra = None):
-    
+"""
+My integrate_adaptive currently gets stuck in a big loop. For some reason it
+doesn't meet the err < tol condition for a while, and continues to integrate
+between smaller and smaller intervals until the whole thing crashes. I am at
+a loss to explain where the error is coming from, since the bones of what it
+is doing are essentially equivalent to Jon's. The only thing I have added is
+a few bits that pull out the already evaluated x and y, and passes them into
+the recursive function call in the last else statement so that this call of 
+the function doesn't have to reevaluate those points again. 
+
+Suffice it to say, this calls f(x) far more times than the one written in
+class.
+"""
+
+def integrate_adaptive(fun, a, b, tol, extra = None, calls = [0]):
+    print('-----')
     print('integrating between ', a, b)
+    calls[0]+=1
     x = np.linspace(a, b, 5)
     dx = (b - a)/(len(x) - 1)
         
-    if type(extra) == type(None):
+    if type(extra) == type(None): # This if/else statement checks if type(extra)
+                                  # is None (i.e. the first call of the function)
         y = fun(x)
-        area1 = 2*dx*(y[0] + 4*y[2] + y[4])/3 # coarse step
-        area2 = dx*(y[0] + 4*y[1] + 2*y[2] + 4*y[3] + y[4])/3 # finer step
+        area1 = 2*dx*(y[0] + 4*y[2] + y[4])/3
+        area2 = dx*(y[0] + 4*y[1] + 2*y[2] + 4*y[3] + y[4])/3 
         err = np.abs(area1 - area2)
         
-    else:
+    else: # all else will be a recursive function call from the below if/else
+        
+        # Delete the x values for which we already evaluated y:
+        
         for i in range(len(extra[0, :])):
             index = np.where(extra[0, :][i] == x)[0][0]
             x = np.delete(x, index)
+
+        # Evaluate y for the remaining x values:
         
         y = fun(x)
+        # print('x trunc', x)
+        # print('extra x', extra[0,:])
+        
+        # Recombine the newly evaluated x and y values with the old ones:
                 
         x = np.concatenate((x, extra[0, :]))
         x = np.sort(x)
         
         y = np.concatenate((y, extra[1, :]))
         y = np.sort(y)
+        # print('x', x)
         
-        area1 = 2*dx*(y[0] + 4*y[2] + y[4])/3 # coarse step
-        area2 = dx*(y[0] + 4*y[1] + 2*y[2] + 4*y[3] + y[4])/3 # finer step
+        area1 = 2*dx*(y[0] + 4*y[2] + y[4])/3
+        area2 = dx*(y[0] + 4*y[1] + 2*y[2] + 4*y[3] + y[4])/3
         err = np.abs(area1 - area2)
         
-        # if err < tol:
-        #     return area2
-        
-        
+    # print(f'{err} < {tol} -->', err<tol)   
+    
     if err < tol:
         return area2
-    
+
     else:
         xmid = (a + b)/2
         xl = np.linspace(a, xmid, 5)
         xr = np.linspace(xmid, b, 5)
         
-        extra_xl = []
-        extra_yl = []
-        
-        extra_xr = []
-        extra_yr = []
-        
-        # for i in range(len(xl)):
-        #     index = np.where(xl[i] == x)[0][0]
-        #     print(index)
-        #     extra_xl.append(x[index])
-        #     extra_yl.append(y[index])
+        # Grab the x and y points we've already evaluated and
+        # throw them into an "extra" array, where the first row 
+        # contains already used x values and the second row 
+        # contains their associated y values:
             
         extra_xl = x[np.where(xl == x)[0]]
         extra_xr = x[np.where(xr == x)[0]]
         
         extra_yl = y[np.where(xl == x)[0]]
         extra_yr = y[np.where(xr == x)[0]]
-            
-        # for i in range(len(xr)):
-        #     index = np.where(xr[i] == x)[0][0]
-        #     extra_xr.append(x[index])
-        #     extra_yr.append(y[index])
                     
         extra_l = np.vstack((extra_xl, extra_yl))
         extra_r = np.vstack((extra_xr, extra_yr))
@@ -183,11 +196,17 @@ def integrate_adaptive(fun, a, b, tol, extra = None):
         left = integrate_adaptive(fun, a, xmid, tol/2, extra = extra_l)
         right = integrate_adaptive(fun, xmid, b, tol/2, extra = extra_r)
         
-        return left + right
+        lpr =  left + right
+    
+        return lpr
     
 a = -100
 b = 100
-# print(integrate_adaptive(np.exp, a, b, 1e-7))
+fun = np.exp
+ans = integrate_adaptive(fun, a, b, 1e-7, extra = None, calls = [0])
+print('(2)')
+print('integrate_adaptive error = ', ans - (fun(b) - fun(a)))
+print('#-------------------------------------')
 
 #-----------------------------------------------------------------------------
 # (Q3)
@@ -256,7 +275,6 @@ def cheb_log2(xx):
     else:
         tol_index = tol_inds[0]
         tol_coeffs = coeffs[:tol_index] # gather the coefficients up to this index
-        print(tol_index)
         yy = np.polynomial.chebyshev.chebval(xx, tol_coeffs) # re-evaluate yy with
                                                              # truncated coeffs                                       
         
@@ -265,7 +283,8 @@ def cheb_log2(xx):
 xx = np.linspace(0.5, 1, 100)
 plt.plot(xx, np.log2(xx))
 plt.scatter(xx, cheb_log2(xx))
-print(np.std(np.log2(xx) - cheb_log2(xx)))
+print('(3)')
+print('log_2 Chebyshev error = ', np.std(np.log2(xx) - cheb_log2(xx)))
 
 # Evaluate ln(x) for any positive number:
     
@@ -282,7 +301,7 @@ def mylog2(xx):
         ln(x) = log_e(x) = log_2(x) / log_2(e)
         
     Further, if we break up x and e into their mantissa & exponent, say
-    x = m2^n and e = a2^b, we can get everything into a form that can be
+    x = m*2^n and e = a*2^b, we can get everything into a form that can be
     handled by Chebyshev polynomials:
         
         log_2(m2^n) / log_2(a2^b)
@@ -298,16 +317,17 @@ def mylog2(xx):
     
     m, n = np.frexp(xx)
     
-    def cheb_pos(x):
+    def cheb_pos(xx):
         N = 150
-        x = np.linspace(1e-200, 1, 10000)
+        x = np.linspace(1e-2, 1, 10000) # this seems to work best for lower limit --> 1; weird
         x_resc = np.interp(x, (min(x), max(x)), (-1, +1))
         # y = np.log2(x_resc)
         y = np.log2(x)
         coeffs = np.polynomial.chebyshev.chebfit(x, y, N)
-        return np.polynomial.chebyshev.chebval(x, coeffs)
+        return np.polynomial.chebyshev.chebval(xx, coeffs)
     
     ln = (n + cheb_pos(m))/(b + cheb_pos(a))
     return ln
 
-# print(mylog2(25))
+xxx = np.linspace(1, 100, 1000)
+print('ln(x) Chebyshev error = ', np.std(mylog2(xxx) - np.log(xxx)))
