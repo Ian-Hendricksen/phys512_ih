@@ -120,9 +120,9 @@ doesn't meet the err < tol condition for a while, and continues to integrate
 between smaller and smaller intervals until the whole thing crashes. I am at
 a loss to explain where the error is coming from, since the bones of what it
 is doing are essentially equivalent to Jon's. The only thing I have added is
-a few bits that pull out the already evaluated x and y, and passes them into
-the recursive function call in the last else statement so that this call of 
-the function doesn't have to reevaluate those points again. 
+a few bits that pull out the already evaluated x and y (extra_l and extra_r), 
+and passes them into the recursive function call in the last else statement 
+so that this call of the function doesn't have to reevaluate those points again. 
 
 Suffice it to say, this calls f(x) far more times than the one written in
 class.
