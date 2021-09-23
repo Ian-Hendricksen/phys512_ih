@@ -215,20 +215,24 @@ print('-------------------------------------')
 
 def cheb_log2(xx):
     
-    # def scale(x, out_range=(-1, 1)):
-    #     domain = np.min(x), np.max(x)
-    #     y = (x - (domain[1] + domain[0]) / 2) / (domain[1] - domain[0])
-    #     return y * (out_range[1] - out_range[0]) + (out_range[1] + out_range[0]) / 2
-    
     n = 150
     x = np.linspace(0.5, 1, 1000)
-    x_resc = np.linspace(-1, 1, 1000)
-    # x_resc = scale(x)
+    # x_resc = np.linspace(-1, 1, 1000)
     y = np.log2(x)
-    # plt.plot(x,y,c='red');plt.plot(x_resc,y,c='green')
-    coeffs = np.polynomial.chebyshev.chebfit(x_resc, y, n)
+    # plt.plot(x,y,c='red');plt.plot(x_resc,y,c='green') 
+    coeffs = np.polynomial.chebyshev.chebfit(x, y, n)
+    
+    """
+    I should note that here I tried rescaling x as is suggested in the
+    prompt, but when I would write above chebfit(x_resc, y, n), I would 
+    have a problem with rescaling -back- the output yy(xx) values I want.
+    However, writing chebfit(x, y, n) seems to mitigate this problem and
+    the fit performs far better. Why would we need to rescale here/how 
+    would this be implemented?
+    """
+    
     yy = np.polynomial.chebyshev.chebval(xx, coeffs)
-        
+         
     """
     I first tried applying the method to find the minimum number of
     coefficients needed from Jon's polynomial notes, but decided it
