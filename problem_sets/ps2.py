@@ -187,7 +187,7 @@ def integrate_adaptive(fun, a, b, tol, extra = None):
     
 a = -100
 b = 100
-print(integrate_adaptive(np.exp, a, b, 1e-7))
+# print(integrate_adaptive(np.exp, a, b, 1e-7))
 
 #-----------------------------------------------------------------------------
 # (Q3)
@@ -204,11 +204,11 @@ def cheb_log2(xx):
         y = (x - (domain[1] + domain[0]) / 2) / (domain[1] - domain[0])
         return y * (out_range[1] - out_range[0]) + (out_range[1] + out_range[0]) / 2
     
-    x_resc = scale(x)
-    # x_resc = np.interp(x, (min(x), max(x)), (-1, +1))
-    y = np.log2(x_resc)
+    # x_resc = scale(x)
+    # # x_resc = np.interp(x, (min(x), max(x)), (-1, +1))
+    # y = np.log2(x_resc)
     
-    # y = np.log2(x)
+    y = np.log2(x)
     coeffs = np.polynomial.chebyshev.chebfit(x, y, n)
     yy = np.polynomial.chebyshev.chebval(xx, coeffs)
     
@@ -239,36 +239,75 @@ def cheb_log2(xx):
     trunc_errs = np.zeros(n)
     
     for i in range(n):
-        trunc_coeffs = coeffs[:i+1]
-        yyy = np.polynomial.chebyshev.chebval(xx, trunc_coeffs)
-        trunc_errs[i] = abs(np.std(yyy - np.log2(xx)))
+        trunc_coeffs = coeffs[:i+1] # truncate coefficients up to i+1 
+        yyy = np.polynomial.chebyshev.chebval(xx, trunc_coeffs) # reevaluate with truncated polynomial
+        if type(xx) == int or type(xx) == float: # this if/else statement suppresses an index error
+            trunc_errs[i] = abs(yyy - np.log2(xx))
+        else:
+            trunc_errs[i] = abs(np.std(yyy - np.log2(xx)))
     
-    tol = 1e-3 # arbitrarily set tolerance/error threshold
+    tol = 1e-6 # set tolerance/error threshold
         
     tol_inds = np.where(trunc_errs < tol)[0] # get indices where the error is
                                              # less than tol
-                                                 
+                                                                                              
     if len(tol_inds) == 0:
         return yy # if tol_inds is empty, the only # of coeffs with err < tol is n
     else:
         tol_index = tol_inds[0]
         tol_coeffs = coeffs[:tol_index] # gather the coefficients up to this index
+        print(tol_index)
         yy = np.polynomial.chebyshev.chebval(xx, tol_coeffs) # re-evaluate yy with
                                                              # truncated coeffs                                       
         
         return yy
-    
+   
 xx = np.linspace(0.5, 1, 100)
-# plt.plot(xx, np.log2(xx))
-# plt.scatter(xx, cheb_log2(xx))
-# print(np.std(np.log2(xx) - cheb_log2(xx)))
+plt.plot(xx, np.log2(xx))
+plt.scatter(xx, cheb_log2(xx))
+print(np.std(np.log2(xx) - cheb_log2(xx)))
 
 # Evaluate ln(x) for any positive number:
     
-def mylog2(x):
+def mylog2(xx):
     
-    e = np.exp(1)
+    """
     
-    # np.frexp returns (mantissa, exponent), where x = mantissa * 2**exponent`. 
-    # The mantissa lies in the open interval(-1, 1), while the twos exponent 
-    # is a signed integer.
+    np.frexp returns (mantissa, exponent), where x = mantissa * 2**exponent`. 
+    The mantissa lies in the open interval(-1, 1), while the twos exponent 
+    is a signed integer. (For my own reference)
+    
+    Say we want ln(x). We can use some log rules to state that
+    
+        ln(x) = log_e(x) = log_2(x) / log_2(e)
+        
+    Further, if we break up x and e into their mantissa & exponent, say
+    x = m2^n and e = a2^b, we can get everything into a form that can be
+    handled by Chebyshev polynomials:
+        
+        log_2(m2^n) / log_2(a2^b)
+                                   = (n + log_2(m)) / (b + log_2(a)) (*) 
+        
+    where -1 < m, a < 1. Now we simply construct log_2(xx) using Chebyshev
+    polynomials and calculate Equation (*):
+    
+    """
+    
+    e = np.exp(1) # first, get the numerical value for e
+    a, b = np.frexp(e)
+    
+    m, n = np.frexp(xx)
+    
+    def cheb_pos(x):
+        N = 150
+        x = np.linspace(1e-200, 1, 10000)
+        x_resc = np.interp(x, (min(x), max(x)), (-1, +1))
+        # y = np.log2(x_resc)
+        y = np.log2(x)
+        coeffs = np.polynomial.chebyshev.chebfit(x, y, N)
+        return np.polynomial.chebyshev.chebval(x, coeffs)
+    
+    ln = (n + cheb_pos(m))/(b + cheb_pos(a))
+    return ln
+
+# print(mylog2(25))
