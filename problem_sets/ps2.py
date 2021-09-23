@@ -109,7 +109,7 @@ integrand is:
 
 """
 
-print('#-------------------------------------')
+print('-------------------------------------')
 
 #-----------------------------------------------------------------------------
 # (Q2)
@@ -203,10 +203,10 @@ def integrate_adaptive(fun, a, b, tol, extra = None, calls = [0]):
 a = -100
 b = 100
 fun = np.exp
-ans = integrate_adaptive(fun, a, b, 1e-7, extra = None, calls = [0])
+# ans = integrate_adaptive(fun, a, b, 1e-7, extra = None, calls = [0])
 print('(2)')
-print('integrate_adaptive error = ', ans - (fun(b) - fun(a)))
-print('#-------------------------------------')
+# print('integrate_adaptive error = ', ans - (fun(b) - fun(a)))
+print('-------------------------------------')
 
 #-----------------------------------------------------------------------------
 # (Q3)
@@ -215,22 +215,20 @@ print('#-------------------------------------')
 
 def cheb_log2(xx):
     
+    # def scale(x, out_range=(-1, 1)):
+    #     domain = np.min(x), np.max(x)
+    #     y = (x - (domain[1] + domain[0]) / 2) / (domain[1] - domain[0])
+    #     return y * (out_range[1] - out_range[0]) + (out_range[1] + out_range[0]) / 2
+    
     n = 150
     x = np.linspace(0.5, 1, 1000)
-    
-    def scale(x, out_range=(-1, 1)):
-        domain = np.min(x), np.max(x)
-        y = (x - (domain[1] + domain[0]) / 2) / (domain[1] - domain[0])
-        return y * (out_range[1] - out_range[0]) + (out_range[1] + out_range[0]) / 2
-    
+    x_resc = np.linspace(-1, 1, 1000)
     # x_resc = scale(x)
-    # # x_resc = np.interp(x, (min(x), max(x)), (-1, +1))
-    # y = np.log2(x_resc)
-    
     y = np.log2(x)
-    coeffs = np.polynomial.chebyshev.chebfit(x, y, n)
+    # plt.plot(x,y,c='red');plt.plot(x_resc,y,c='green')
+    coeffs = np.polynomial.chebyshev.chebfit(x_resc, y, n)
     yy = np.polynomial.chebyshev.chebval(xx, coeffs)
-    
+        
     """
     I first tried applying the method to find the minimum number of
     coefficients needed from Jon's polynomial notes, but decided it
@@ -319,11 +317,11 @@ def mylog2(xx):
     
     def cheb_pos(xx):
         N = 150
-        x = np.linspace(1e-2, 1, 10000) # this seems to work best for lower limit --> 1; weird
+        x = np.linspace(1e-15, 1e15, 10000) # this seems to work best for lower limit --> 1; weird
         x_resc = np.interp(x, (min(x), max(x)), (-1, +1))
         # y = np.log2(x_resc)
         y = np.log2(x)
-        coeffs = np.polynomial.chebyshev.chebfit(x, y, N)
+        coeffs = np.polynomial.chebyshev.chebfit(x_resc, y, N)
         return np.polynomial.chebyshev.chebval(xx, coeffs)
     
     ln = (n + cheb_pos(m))/(b + cheb_pos(a))
