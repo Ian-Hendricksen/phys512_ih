@@ -18,9 +18,9 @@ techniques to solve for the electric field at a distance z above a thin
 spherical shell with radius R and surface charge sigma, inside and outside the 
 shell. The integral (taken from Griffiths) is of the following form:
     
-                           /\ 1
+                          /\ 1
     E(z) = k*2piR^2*sigma  |    (z - R*u)/(R**2 + z**2 - 2*R*z*u)**(3/2) du
-                            \/ -1
+                           \/ -1
 
 The explicit solution of E(z) is E(z) = 0                       (z < R)
                                         k*2piR^2*sigma / z^2    (z > R)
