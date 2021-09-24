@@ -70,30 +70,29 @@ def eval_E_leg(z, R, sigma):
     E = np.zeros(len(z))    
     n = len(z)
     u = np.linspace(-1, 1, n)
+
+    def fun(u):
+        return (z - R*u)/(R**2 + z**2 - 2*R*z*u)**(3/2)
     
-    for i in range(len(z)):
+    coeffs = np.polynomial.legendre.legfit(u, fun(u), 150)
+    int_coeffs = np.polynomial.legendre.legint(coeffs)
     
-        def fun(u):
-            return (z[i] - R*u)/(R**2 + z[i]**2 - 2*R*z[i]*u)**(3/2)
-        
-        E = ((R**2 * sigma)/(2*e_0)) * leg_eval(u, fun, n)
+    E = ((R**2 * sigma)/(2*e_0)) * np.polynomial.legendre.legval(z, int_coeffs)
     
     return E
 
-# print(eval_E_leg(z, R, sigma))
-
-# x=np.linspace(0,1,len(coeffs))
-# y=np.exp(x)
-# dx=x[1]-x[0]
-# my_int=np.sum(coeffs*y)*dx
+# E_leg = eval_E_leg(z, R, sigma)
+# print('Legendre error', np.std(E_leg - E_quad))
 
 # Plot:
 
-# plt.scatter(z, E_quad, label = 'quad')
-# plt.xlabel('z')
-# plt.ylabel('E')
-# plt.title(f'Spherical Shell E-Field, R = {R}, $\sigma$ = {sigma}')
-# plt.legend()
+f1 = plt.figure()
+plt.scatter(z, E_quad, label = 'Quad')
+# plt.scatter(z, E_leg, label = 'Legendre')
+plt.xlabel('z')
+plt.ylabel('E')
+plt.title(f'Spherical Shell E-Field, R = {R}, $\sigma$ = {sigma}')
+plt.legend()
 
 """
 
@@ -125,7 +124,7 @@ and passes them into the recursive function call in the last else statement
 so that this call of the function doesn't have to reevaluate those points again. 
 
 Suffice it to say, this calls f(x) far more times than the one written in
-class.
+class. Call this function at your own (computer's) risk!
 """
 
 def integrate_adaptive(fun, a, b, tol, extra = None, calls = [0]):
@@ -217,21 +216,11 @@ def cheb_log2(xx):
     
     n = 150
     x = np.linspace(0.5, 1, 1000)
-    # x_resc = np.linspace(-1, 1, 1000)
+    x_resc = np.linspace(-1, 1, 1000)
     y = np.log2(x)
-    # plt.plot(x,y,c='red');plt.plot(x_resc,y,c='green') 
-    coeffs = np.polynomial.chebyshev.chebfit(x, y, n)
-    
-    """
-    I should note that here I tried rescaling x as is suggested in the
-    prompt, but when I would write above chebfit(x_resc, y, n), I would 
-    have a problem with rescaling -back- the output yy(xx) values I want.
-    However, writing chebfit(x, y, n) seems to mitigate this problem and
-    the fit performs far better. Why would we need to rescale here/how 
-    would this be implemented?
-    """
-    
-    yy = np.polynomial.chebyshev.chebval(xx, coeffs)
+    coeffs = np.polynomial.chebyshev.chebfit(x_resc, y, n)
+    xx_resc = np.linspace(-1, 1, len(xx))
+    yy = np.polynomial.chebyshev.chebval(xx_resc, coeffs)
          
     """
     I first tried applying the method to find the minimum number of
@@ -282,9 +271,10 @@ def cheb_log2(xx):
         
         return yy
    
-xx = np.linspace(0.5, 1, 100)
-plt.plot(xx, np.log2(xx))
-plt.scatter(xx, cheb_log2(xx))
+f2 = plt.figure()
+xx = np.linspace(0.5, 1, 25)
+plt.plot(xx, np.log2(xx), color = 'red')
+plt.scatter(xx, cheb_log2(xx), color = 'green')
 print('(3)')
 print('log_2 Chebyshev error = ', np.std(np.log2(xx) - cheb_log2(xx)))
 
@@ -319,17 +309,22 @@ def mylog2(xx):
     
     m, n = np.frexp(xx)
     
-    def cheb_pos(xx):
+    def cheb_pos(xx): # chebyshev fit for all positive #'s (well, almost!)
         N = 150
-        x = np.linspace(1e-15, 1e15, 10000) # this seems to work best for lower limit --> 1; weird
-        x_resc = np.interp(x, (min(x), max(x)), (-1, +1))
+        n = 10000
+        x = np.linspace(1e-15, 1e15, n) # this seems to work best for lower limit --> 1; weird
+        x_resc = np.linspace(-1, 1, n)
         # y = np.log2(x_resc)
         y = np.log2(x)
         coeffs = np.polynomial.chebyshev.chebfit(x_resc, y, N)
+        # xx_resc = np.linspace(-1, 1, len(xx))
         return np.polynomial.chebyshev.chebval(xx, coeffs)
     
     ln = (n + cheb_pos(m))/(b + cheb_pos(a))
     return ln
 
-xxx = np.linspace(1, 100, 1000)
+xxx = np.linspace(1, 100, 25)
 print('ln(x) Chebyshev error = ', np.std(mylog2(xxx) - np.log(xxx)))
+f3 = plt.figure()
+plt.scatter(xxx, mylog2(xxx))
+plt.plot(xxx, np.log(xxx))
