@@ -12,10 +12,28 @@ from scipy import integrate
 #-----------------------------------------------------------------------------
 # (Q1)
 
+"""
+The following is a comparative method between different types of integration
+techniques to solve for the electric field at a distance z above a thin
+spherical shell with radius R and surface charge sigma, inside and outside the 
+shell. The integral (taken from Griffiths) is of the following form:
+    
+                           /\ 1
+    E(z) = k*2piR^2*sigma  |    (z - R*u)/(R**2 + z**2 - 2*R*z*u)**(3/2) du
+                            \/ -1
+
+The explicit solution of E(z) is E(z) = 0                       (z < R)
+                                        k*2piR^2*sigma / z^2    (z > R)
+"""
+
+# Define some useful constants that are used for each type of integration:
+
 k = 9e9 # 1/4*pi*e_o
 e_0 = (1/4*np.pi*k)
 
-# Evaluate first using quad:
+#-------------------------------
+
+# Define integrator using quad:
 
 def eval_E_quad(z, R, sigma):
     
@@ -36,27 +54,73 @@ def eval_E_quad(z, R, sigma):
     
     return E, selferr
 
-# Evaluate using Legendre:
+#-------------------------------
+
+# Define integrator using Legendre:
     
+def legendre_mat(npt):
+    x=np.linspace(-1,1,npt)
+    mat=np.zeros([npt,npt])
+    mat[:,0]=1.0
+    mat[:,1]=x
+    if npt>2:
+        for i in range(1,npt-1):
+            mat[:,i+1]=((2.0*i+1)*x*mat[:,i]-i*mat[:,i-1])/(i+1.0)
+    return mat
+
+def integration_coeffs_legendre(npt):
+    mat=legendre_mat(npt)
+    mat_inv=np.linalg.inv(mat)
+    coeffs=mat_inv[0,:]
+    coeffs=coeffs/coeffs.sum()*(npt-1.0)
+    return coeffs
+
+def integrate_legendre(fun,xmin,xmax,dx_targ,ord=2):
+    coeffs=integration_coeffs_legendre(ord+1)
+    npt=int((xmax-xmin)/dx_targ)+1
+    nn=(npt-1)%(ord)
+    if nn>0:
+        npt=npt+(ord-nn)
+    assert(npt%(ord)==1)
+    npt=int(npt)
+
+    x=np.linspace(xmin,xmax,npt)
+    dx=np.median(np.diff(x))    
+    dat=fun(x)
+
+    mat=np.reshape(dat[:-1],[(npt-1)//(ord),ord]).copy()
+    mat[0,0]=mat[0,0]+dat[-1] 
+    mat[1:,0]=2*mat[1:,0] 
+
+    vec=np.sum(mat,axis=0)
+    tot=np.sum(vec*coeffs[:-1])*dx
+    return tot
+
+# Using Jon's integrate_legendre method above, we evaluate the integral
+# for every z value:
+
 def eval_E_leg(z, R, sigma):
     
-    E = np.zeros(len(z))    
-    n = len(z)
-    u = np.linspace(-1, 1, n)
+    xmin = -1
+    xmax = 1
+    dx_targ = 0.1
+    integrated_vals = np.zeros(len(z))
+    
+    for i in range(len(z)):
+    
+        def integrand(u):
+            return (z[i] - R*u)/(R**2 + z[i]**2 - 2*R*z[i]*u)**(3/2)
 
-    def fun(u):
-        return (z - R*u)/(R**2 + z**2 - 2*R*z*u)**(3/2)
-        
-    coeffs = np.polynomial.legendre.legfit(u, fun(u), 150)
-    int_coeffs = np.polynomial.legendre.legint(coeffs)
+        integrated_vals[i] = integrate_legendre(integrand, xmin, xmax, dx_targ)
     
-    z_resc = np.linspace(-1, 1, len(z))
-    
-    E = (2*np.pi*R**2*sigma*k) * np.polynomial.legendre.legval(z_resc, int_coeffs)
-    
-    return E
+    return (2*np.pi*R**2*sigma*k) * integrated_vals
 
-n = 25
+#-------------------------------
+
+# Set up the points for which we want to integrate, and our constants R and
+# sigma:
+
+n = 30
 R = 1 # m
 sigma = 1 # C/m^2
 
@@ -64,7 +128,12 @@ z = np.linspace(0, 10, n) # m
 z = np.insert(z, n, R) # This makes sure there is a point where z = R
 z.sort()
 
+#-------------------------------
+
+# Calculate exact E according to explicit (by-hand) integration:
+
 z_exact = np.linspace(min(z), max(z), 1000)
+
 def E_exact(z, R, sigma):
     E_exact = np.zeros(len(z))
     for i in range(len(E_exact)):
@@ -77,6 +146,10 @@ def E_exact(z, R, sigma):
 E_quad, E_quad_selferr = eval_E_quad(z, R, sigma)
 E_leg = eval_E_leg(z, R, sigma)
 
+#-------------------------------
+
+# Do some plotting and error estimation:
+
 print('(1)')
 
 """\
@@ -87,8 +160,8 @@ reasonable estimate of the error:
 
 err_quad = np.std(np.delete(E_quad - E_exact(z, R, sigma), np.where(z==R)))
 err_leg = np.std(np.delete(E_leg - E_exact(z, R, sigma), np.where(z==R)))
-print('Quad error:', err_quad) 
-print('Legendre error', err_leg)
+print('Quad error = ', err_quad) 
+print('My Integrator (Legendre) error = ', err_leg)
 
 # Plot:
 
