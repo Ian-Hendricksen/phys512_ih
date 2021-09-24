@@ -8,21 +8,19 @@ Created on Sun Sep 19 15:12:27 2021
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import integrate
-from scipy import interpolate
 
 #-----------------------------------------------------------------------------
 # (Q1)
 
 k = 9e9 # 1/4*pi*e_o
+e_0 = (1/4*np.pi*k)
 
 # Evaluate first using quad:
 
 def eval_E_quad(z, R, sigma):
     
-    e_0 = (1/4*np.pi*k)
-    
     E = np.zeros(len(z))
-    err = np.zeros(len(z))
+    selferr = np.zeros(len(z))
     
     for i in range(len(z)):
     
@@ -33,10 +31,30 @@ def eval_E_quad(z, R, sigma):
             
             integ_tup = integrate.quad(integ, min(u), max(u)) # contains integrated answer + err
             
-            E[i] = ((R**2 * sigma)/(2*e_0)) * integ_tup[0] # multiply by relevant constants
-            err[i] = integ_tup[1] # grab error
+            E[i] = (2*np.pi*R**2*sigma*k) * integ_tup[0] # multiply by relevant constants
+            selferr[i] = integ_tup[1] # grab error
     
-    return E, err
+    return E, selferr
+
+# Evaluate using Legendre:
+    
+def eval_E_leg(z, R, sigma):
+    
+    E = np.zeros(len(z))    
+    n = len(z)
+    u = np.linspace(-1, 1, n)
+
+    def fun(u):
+        return (z - R*u)/(R**2 + z**2 - 2*R*z*u)**(3/2)
+        
+    coeffs = np.polynomial.legendre.legfit(u, fun(u), 150)
+    int_coeffs = np.polynomial.legendre.legint(coeffs)
+    
+    z_resc = np.linspace(-1, 1, len(z))
+    
+    E = (2*np.pi*R**2*sigma*k) * np.polynomial.legendre.legval(z_resc, int_coeffs)
+    
+    return E
 
 n = 25
 R = 1 # m
@@ -46,56 +64,44 @@ z = np.linspace(0, 10, n) # m
 z = np.insert(z, n, R) # This makes sure there is a point where z = R
 z.sort()
 
-E_quad, E_quad_err = eval_E_quad(z, R, sigma)
+z_exact = np.linspace(min(z), max(z), 1000)
+def E_exact(z, R, sigma):
+    E_exact = np.zeros(len(z))
+    for i in range(len(E_exact)):
+        if z[i] < R:
+            E_exact[i] = 0
+        if z[i] > R:
+            E_exact[i] = k*4*np.pi*R**2*sigma/z[i]**2
+    return E_exact
+
+E_quad, E_quad_selferr = eval_E_quad(z, R, sigma)
+E_leg = eval_E_leg(z, R, sigma)
+
 print('(1)')
-print('Quad error:', np.std(E_quad_err))
 
-# Evaluate using Legendre:
-    
-def get_legendre_weights(n):
-    x=np.linspace(-1,1,n+1)
-    P=np.polynomial.legendre.legvander(x,n)
-    Pinv=np.linalg.inv(P)
-    coeffs=Pinv[0,:]
-    return coeffs*n
+"""\
+Since E_exact doesn't evaluate E(z = R) (i.e. because of singularity), 
+we need to delete the point in E_quad and E_leg where z = R to get a 
+reasonable estimate of the error:
+"""
 
-def leg_eval(x, fun, n):
-    coeffs = get_legendre_weights(n)
-    dx = x[1] - x[0]
-    return np.sum(coeffs*fun(x))*dx
-    
-def eval_E_leg(z, R, sigma):
-    
-    e_0 = (1/4*np.pi*k)
-    E = np.zeros(len(z))    
-    n = len(z)
-    u = np.linspace(-1, 1, n)
-
-    def fun(u):
-        return (z - R*u)/(R**2 + z**2 - 2*R*z*u)**(3/2)
-    
-    coeffs = np.polynomial.legendre.legfit(u, fun(u), 150)
-    int_coeffs = np.polynomial.legendre.legint(coeffs)
-    
-    E = ((R**2 * sigma)/(2*e_0)) * np.polynomial.legendre.legval(z, int_coeffs)
-    
-    return E
-
-# E_leg = eval_E_leg(z, R, sigma)
-# print('Legendre error', np.std(E_leg - E_quad))
+err_quad = np.std(np.delete(E_quad - E_exact(z, R, sigma), np.where(z==R)))
+err_leg = np.std(np.delete(E_leg - E_exact(z, R, sigma), np.where(z==R)))
+print('Quad error:', err_quad) 
+print('Legendre error', err_leg)
 
 # Plot:
 
-# f1 = plt.figure()
-# plt.scatter(z, E_quad, label = 'Quad')
-# # plt.scatter(z, E_leg, label = 'Legendre')
-# plt.xlabel('z')
-# plt.ylabel('E')
-# plt.title(f'Spherical Shell E-Field, R = {R}, $\sigma$ = {sigma}')
-# plt.legend()
+f1 = plt.figure()
+plt.scatter(z, E_quad, label = 'Quad')
+plt.scatter(z, E_leg, label = 'Legendre')
+plt.plot(z_exact, E_exact(z_exact, R, sigma), color = 'green', label = 'Exact')
+plt.xlabel('z')
+plt.ylabel('E')
+plt.title(f'Spherical Shell E-Field, R = {R}, $\sigma$ = {sigma}')
+plt.legend()
 
 """
-
 There is indeed a singularity at z = R since there is a 1/|z-R| term
 that pops out after integration, which goes to infinity at that point.
 However, quad doesn't seem to care that such a point blows up, although
@@ -103,8 +109,10 @@ this could result from the fact that the singularity is apparent after
 integrating as opposed to being under the integral, since for z = R the
 integrand is:
     
-    z(1-u)/(2z^2(1-u))^(3/2) # Check this assumption is correct
-
+    z(1-u)/(2z^2(1-u))^(3/2) = (1/2)^(3/2)*(1/z^2(u-1)^(1/2))
+    
+However, this suggests a singularity at z = 0, but quad doesn't seem to 
+care.
 
 """
 
@@ -290,7 +298,6 @@ print('log_2 Chebyshev error = ', np.std(np.log2(xx) - cheb_log2(xx)))
 def mylog2(xx):
     
     """
-    
     np.frexp returns (mantissa, exponent), where x = mantissa * 2**exponent`. 
     The mantissa lies in the open interval(-1, 1), while the twos exponent 
     is a signed integer. (For my own reference)
@@ -308,7 +315,6 @@ def mylog2(xx):
         
     where -1 < m, a < 1. Now we simply construct log_2(xx) using Chebyshev
     polynomials and calculate Equation (*):
-    
     """
     
     e = np.exp(1) # first, get the numerical value for e
@@ -329,7 +335,7 @@ def mylog2(xx):
     ln = (n + cheb_man(m))/(b + cheb_man(a))
     return ln
 
-xx = np.linspace(1, 1e15, 10000)
+xx = np.linspace(1, 1e15, 1000)
 print('ln(x) Chebyshev error = ', np.std(mylog2(xx) - np.log(xx)))
 f3 = plt.figure()
 plt.plot(xx, mylog2(xx), label = 'mylog2(x)')
