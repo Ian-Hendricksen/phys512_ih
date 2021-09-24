@@ -40,14 +40,14 @@ def eval_E_quad(z, R, sigma):
     E = np.zeros(len(z))
     selferr = np.zeros(len(z))
     
-    for i in range(len(z)):
+    for i in range(len(z)): # loop through each z
     
-            u = [-1,1]
+            u = [-1,1] # define limits of integ
             
             def integ(u):
                 return (z[i] - R*u)/(R**2 + z[i]**2 - 2*R*z[i]*u)**(3/2) # integrand
             
-            integ_tup = integrate.quad(integ, min(u), max(u)) # contains integrated answer + err
+            integ_tup = integrate.quad(integ, min(u), max(u)) # contains integrated answer + inherent err
             
             E[i] = (2*np.pi*R**2*sigma*k) * integ_tup[0] # multiply by relevant constants
             selferr[i] = integ_tup[1] # grab error
@@ -101,17 +101,16 @@ def integrate_legendre(fun,xmin,xmax,dx_targ,ord=2):
 
 def eval_E_leg(z, R, sigma):
     
-    xmin = -1
-    xmax = 1
+    u = [-1, 1] # set up limits and dx_targ
     dx_targ = 0.1
     integrated_vals = np.zeros(len(z))
     
-    for i in range(len(z)):
+    for i in range(len(z)): # as with quad, loop through integrand for each z
     
         def integrand(u):
             return (z[i] - R*u)/(R**2 + z[i]**2 - 2*R*z[i]*u)**(3/2)
 
-        integrated_vals[i] = integrate_legendre(integrand, xmin, xmax, dx_targ)
+        integrated_vals[i] = integrate_legendre(integrand, min(u), max(u), dx_targ) # apply legendre integration
     
     return (2*np.pi*R**2*sigma*k) * integrated_vals
 
@@ -143,19 +142,19 @@ def E_exact(z, R, sigma):
             E_exact[i] = k*4*np.pi*R**2*sigma/z[i]**2
     return E_exact
 
-E_quad, E_quad_selferr = eval_E_quad(z, R, sigma)
-E_leg = eval_E_leg(z, R, sigma)
-
 #-------------------------------
 
 # Do some plotting and error estimation:
+    
+E_quad, E_quad_selferr = eval_E_quad(z, R, sigma)
+E_leg = eval_E_leg(z, R, sigma)
 
 print('(1)')
 
 """
 Since E_exact doesn't evaluate E(z = R) (i.e. because of singularity), 
-we need to delete the point in E_quad and E_leg where z = R to get a 
-reasonable estimate of the error:
+we need to delete the point in E_quad and E_leg where z = R to get our 
+estimate of the error:
 """
 
 err_quad = np.std(np.delete(E_quad - E_exact(z, R, sigma), np.where(z==R)))
@@ -300,18 +299,20 @@ print('-------------------------------------')
 def cheb_log2(xx):
     
     n = 150
-    x = np.linspace(0.5, 1, 1000)
-    x_resc = np.linspace(-1, 1, 1000)
+    x = np.linspace(0.5, 1, 1000) # our function needs to be valid from 0.5 to 1
+    x_resc = np.linspace(-1, 1, 1000) # rescale the x values
     y = np.log2(x)
-    coeffs = np.polynomial.chebyshev.chebfit(x_resc, y, n)
+    coeffs = np.polynomial.chebyshev.chebfit(x_resc, y, n) # grab coeffs
     
     # Check to see if xx is float or array:
     
     if type(xx) == np.float64 or type(xx) == float:
-        yy = np.polynomial.chebyshev.chebval(xx, coeffs)
+        yy = np.polynomial.chebyshev.chebval(xx, coeffs) 
     else:
         xx_resc = np.linspace(-1, 1, len(xx))
-        yy = np.polynomial.chebyshev.chebval(xx_resc, coeffs)
+        yy = np.polynomial.chebyshev.chebval(xx_resc, coeffs) # evaluate at
+                                                              # -rescaled-
+                                                              # values, not xx
          
     """
     I first tried applying the method to find the minimum number of
@@ -362,11 +363,13 @@ def cheb_log2(xx):
         
         return yy
    
-# f2 = plt.figure()
+f2 = plt.figure()
 xx = np.linspace(0.5, 1, 25)
-# plt.plot(xx, np.log2(xx), color = 'red', label = '$log_{2}$(x)')
-# plt.scatter(xx, cheb_log2(xx), color = 'green', label = 'Chebyshev fit')
-# plt.title('Chebyshev Fit to log_2(x) from 0.5 to 1')
+plt.plot(xx, np.log2(xx), color = 'red', label = 'log$_{2}$(x)')
+plt.scatter(xx, cheb_log2(xx), color = 'green', label = 'Chebyshev fit')
+plt.title('Chebyshev Fit to log_2(x) from 0.5 to 1')
+plt.legend()
+
 print('(3)')
 print('log_2 Chebyshev error = ', np.std(np.log2(xx) - cheb_log2(xx)))
 
@@ -409,14 +412,14 @@ def mylog2(xx):
         coeffs = np.polynomial.chebyshev.chebfit(x_resc, y, N)
         return np.polynomial.chebyshev.chebval(xxx, coeffs)
     
-    ln = (n + cheb_man(m))/(b + cheb_man(a))
+    ln = (n + cheb_man(m))/(b + cheb_man(a)) # apply Equation (*)
     return ln
 
 xx = np.linspace(1, 1e15, 1000)
 print('ln(x) Chebyshev error = ', np.std(mylog2(xx) - np.log(xx)))
 f3 = plt.figure()
 plt.plot(xx, mylog2(xx), label = 'mylog2(x)')
-plt.plot(xx, np.log(xx), label = 'log_2(x)')
+plt.plot(xx, np.log(xx), label = 'log$_2$(x)')
 plt.legend()
 
 """
