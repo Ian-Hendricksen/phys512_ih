@@ -120,7 +120,7 @@ def eval_E_leg(z, R, sigma):
 # Set up the points for which we want to integrate, and our constants R and
 # sigma:
 
-n = 30
+n = 35
 R = 1 # m
 sigma = 1 # C/m^2
 
@@ -152,7 +152,7 @@ E_leg = eval_E_leg(z, R, sigma)
 
 print('(1)')
 
-"""\
+"""
 Since E_exact doesn't evaluate E(z = R) (i.e. because of singularity), 
 we need to delete the point in E_quad and E_leg where z = R to get a 
 reasonable estimate of the error:
@@ -185,8 +185,12 @@ integrand is:
     z(1-u)/(2z^2(1-u))^(3/2) = (1/2)^(3/2)*(1/z^2(u-1)^(1/2))
     
 However, this suggests a singularity at z = 0, but quad doesn't seem to 
-care.
+care. It also seems that my integrator doesn't care about the singularity
+at z = 0, although it does return nan for z = R.
 
+Ultimately quad seems to perform far better than Legendre. The residuals
+are much smaller, and there isn't any weird behavior around z ~ R like
+we observe with Legendre.
 """
 
 print('-------------------------------------')
@@ -205,7 +209,7 @@ and passes them into the recursive function call in the last else statement
 so that this call of the function doesn't have to reevaluate those points again. 
 
 Suffice it to say, this calls f(x) far more times than the one written in
-class. Call this function at your own (computer's) risk!
+class. Call this function (at the bottom of Q2) at your own (computer's) risk!
 """
 
 def integrate_adaptive(fun, a, b, tol, extra = None, calls = [0]):
