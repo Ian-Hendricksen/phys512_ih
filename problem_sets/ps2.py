@@ -29,12 +29,12 @@ def eval_E_quad(z, R, sigma):
             u = [-1,1]
             
             def integ(u):
-                return (z[i] - R*u)/(R**2 + z[i]**2 - 2*R*z[i]*u)**(3/2)
+                return (z[i] - R*u)/(R**2 + z[i]**2 - 2*R*z[i]*u)**(3/2) # integrand
             
             integ_tup = integrate.quad(integ, min(u), max(u)) # contains integrated answer + err
             
-            E[i] = ((R**2 * sigma)/(2*e_0)) * integ_tup[0]
-            err[i] = integ_tup[1]
+            E[i] = ((R**2 * sigma)/(2*e_0)) * integ_tup[0] # multiply by relevant constants
+            err[i] = integ_tup[1] # grab error
     
     return E, err
 
@@ -86,13 +86,13 @@ def eval_E_leg(z, R, sigma):
 
 # Plot:
 
-f1 = plt.figure()
-plt.scatter(z, E_quad, label = 'Quad')
-# plt.scatter(z, E_leg, label = 'Legendre')
-plt.xlabel('z')
-plt.ylabel('E')
-plt.title(f'Spherical Shell E-Field, R = {R}, $\sigma$ = {sigma}')
-plt.legend()
+# f1 = plt.figure()
+# plt.scatter(z, E_quad, label = 'Quad')
+# # plt.scatter(z, E_leg, label = 'Legendre')
+# plt.xlabel('z')
+# plt.ylabel('E')
+# plt.title(f'Spherical Shell E-Field, R = {R}, $\sigma$ = {sigma}')
+# plt.legend()
 
 """
 
@@ -219,8 +219,14 @@ def cheb_log2(xx):
     x_resc = np.linspace(-1, 1, 1000)
     y = np.log2(x)
     coeffs = np.polynomial.chebyshev.chebfit(x_resc, y, n)
-    xx_resc = np.linspace(-1, 1, len(xx))
-    yy = np.polynomial.chebyshev.chebval(xx_resc, coeffs)
+    
+    # Check to see if xx is float or array:
+    
+    if type(xx) == np.float64 or type(xx) == float:
+        yy = np.polynomial.chebyshev.chebval(xx, coeffs)
+    else:
+        xx_resc = np.linspace(-1, 1, len(xx))
+        yy = np.polynomial.chebyshev.chebval(xx_resc, coeffs)
          
     """
     I first tried applying the method to find the minimum number of
@@ -260,7 +266,7 @@ def cheb_log2(xx):
         
     tol_inds = np.where(trunc_errs < tol)[0] # get indices where the error is
                                              # less than tol
-                                                                                              
+                                                                                                                                           
     if len(tol_inds) == 0:
         return yy # if tol_inds is empty, the only # of coeffs with err < tol is n
     else:
@@ -271,10 +277,11 @@ def cheb_log2(xx):
         
         return yy
    
-f2 = plt.figure()
+# f2 = plt.figure()
 xx = np.linspace(0.5, 1, 25)
-plt.plot(xx, np.log2(xx), color = 'red')
-plt.scatter(xx, cheb_log2(xx), color = 'green')
+# plt.plot(xx, np.log2(xx), color = 'red', label = '$log_{2}$(x)')
+# plt.scatter(xx, cheb_log2(xx), color = 'green', label = 'Chebyshev fit')
+# plt.title('Chebyshev Fit to log_2(x) from 0.5 to 1')
 print('(3)')
 print('log_2 Chebyshev error = ', np.std(np.log2(xx) - cheb_log2(xx)))
 
@@ -306,25 +313,31 @@ def mylog2(xx):
     
     e = np.exp(1) # first, get the numerical value for e
     a, b = np.frexp(e)
-    
     m, n = np.frexp(xx)
     
-    def cheb_pos(xx): # chebyshev fit for all positive #'s (well, almost!)
+    def cheb_man(xxx): # chebyshev fit for mantissa's
         N = 150
-        n = 10000
-        x = np.linspace(1e-15, 1e15, n) # this seems to work best for lower limit --> 1; weird
+        n = 1000
+        x = np.linspace(1e-15, 1, n) # mantissa lies in -1 < a, m < 1, 
+                                     # but log_2(x) --> inf as x --> 0; 
+                                     # need to rescale!
         x_resc = np.linspace(-1, 1, n)
-        # y = np.log2(x_resc)
         y = np.log2(x)
         coeffs = np.polynomial.chebyshev.chebfit(x_resc, y, N)
-        # xx_resc = np.linspace(-1, 1, len(xx))
-        return np.polynomial.chebyshev.chebval(xx, coeffs)
+        return np.polynomial.chebyshev.chebval(xxx, coeffs)
     
-    ln = (n + cheb_pos(m))/(b + cheb_pos(a))
+    ln = (n + cheb_man(m))/(b + cheb_man(a))
     return ln
 
-xxx = np.linspace(1, 100, 25)
-print('ln(x) Chebyshev error = ', np.std(mylog2(xxx) - np.log(xxx)))
+xx = np.linspace(1, 1e15, 10000)
+print('ln(x) Chebyshev error = ', np.std(mylog2(xx) - np.log(xx)))
 f3 = plt.figure()
-plt.scatter(xxx, mylog2(xxx))
-plt.plot(xxx, np.log(xxx))
+plt.plot(xx, mylog2(xx), label = 'mylog2(x)')
+plt.plot(xx, np.log(xx), label = 'log_2(x)')
+plt.legend()
+
+"""
+The error improves over what I had previously, but there's still something
+funky going on with the the fit that ends up having some weird steps (I
+believe something similar was seen in Rigel's tutorial).
+"""
