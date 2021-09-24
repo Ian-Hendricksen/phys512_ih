@@ -412,7 +412,7 @@ def mylog2(xx):
         coeffs = np.polynomial.chebyshev.chebfit(x_resc, y, N)
         return np.polynomial.chebyshev.chebval(xxx, coeffs)
     
-    ln = (n + cheb_man(m))/(b + cheb_man(a)) # apply Equation (*)
+    ln = (n + cheb_man(m))/(b + cheb_man(a)) # using Equation (*)
     return ln
 
 xx = np.linspace(1, 1e15, 1000)
