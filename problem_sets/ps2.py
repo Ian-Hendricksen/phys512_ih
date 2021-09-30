@@ -415,7 +415,7 @@ def mylog2(xx):
     ln = (n + cheb_man(m))/(b + cheb_man(a)) # using Equation (*)
     return ln
 
-xx = np.linspace(1, 1e15, 1000)
+xx = np.linspace(1e-15, 1e15, 1000)
 print('ln(x) Chebyshev error = ', np.std(mylog2(xx) - np.log(xx)))
 f3 = plt.figure()
 plt.plot(xx, mylog2(xx), label = 'mylog2(x)')
