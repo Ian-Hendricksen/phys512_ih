@@ -127,7 +127,13 @@ def U238_products(half_lives, t, N0):
 t = np.logspace(0, 9, 1000) # 1000 time points over 1e9 (1 billion) years
 N0 = np.zeros(len(half_lives))
 N0[0] = 1
-N = U238_products(half_lives, t, N0)
+# N = U238_products(half_lives, t, N0)
 
 #-----------------------------------------------------------------------------
 # (Q3)
+
+data = np.loadtxt('dish_zenith.txt')
+fig1 = plt.figure()
+ax = fig1.add_subplot(111, projection='3d')
+plt.ion()
+ax.scatter(data[:,0], data[:,1], data[:,2])
