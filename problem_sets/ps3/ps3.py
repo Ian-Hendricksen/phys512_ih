@@ -157,7 +157,7 @@ def U238_products(half_lives, t, N0):
         
             dNdt_init = -N[i-1]/half_lives[i-1]
             dNdt_both = -N[i]/half_lives[i] + N[i-1]/half_lives[i-1]
-            dNdt_fin = N[i]/half_lives[i]
+            # dNdt_fin = N[i]/half_lives[i]
         
             dNdt[i-1] = dNdt_init + dNdt[i-1]
             dNdt[i] = dNdt_both # need to figure out what to update
