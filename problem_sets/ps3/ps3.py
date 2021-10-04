@@ -9,6 +9,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import integrate
 
+import sys
+orig_stdout = sys.stdout
+f = open('A3 Print Output.txt', 'w')
+sys.stdout = f
+
 #-----------------------------------------------------------------------------
 # (Q1)
 
@@ -41,6 +46,9 @@ def rk4_stepd(fun, x, y, h):
     
     y_2n = np.zeros(len(x))
     y_2n[0] = y[0]
+    
+    y_new = np.zeros(len(x))
+    y_new[0] = y[0]
         
     for i in range(len(x)-1):
         
@@ -73,8 +81,8 @@ def rk4_stepd(fun, x, y, h):
         
         y_2n[i+1] = step2 
         
-    y_new = y_2n + (y_2n - y)/15 # Equation 17.2.3
-    
+        y_new[i+1] = y_2n[i+1] + (y_2n[i+1] - y[i])/15 # Equation 17.2.3
+            
     return y_new
 
 #-------------------------------
@@ -114,11 +122,13 @@ def ytrue(x):
     c0 = y[0]/np.exp(np.arctan(x[0]))
     return c0 * np.exp(np.arctan(x))
 
-plt.plot(x, ytrue(x), label = 'True Function')
-plt.plot(x, ans_step, label = 'rk4_step, 200 steps')
-plt.plot(x, ans_stepd, label = 'rk4_stepd, 200 steps')
-plt.plot(x_new, ans_stepd_new, label = 'rk4_stepd, 73 steps')
-plt.legend()
+# f1 = plt.figure()
+# plt.plot(x, ytrue(x), label = 'True Function')
+# plt.plot(x, ans_step, label = 'rk4_step, 200 steps')
+# plt.plot(x, ans_stepd, label = 'rk4_stepd, 200 steps')
+# plt.plot(x_new, ans_stepd_new, label = 'rk4_stepd, 73 steps')
+# plt.legend()
+# plt.savefig("./A3Q1.png")
 
 print('-------------------------------')
 print('(1)')
@@ -140,40 +150,28 @@ half_lives = np.array([1.41e17, 2.0822e6, 24120, 7.74e12,
 def U238_products(half_lives, t, N0):
     
     def decays(t, N, half_lives = half_lives):
-        # for i in range(1, len(half_lives)):
-        #     dydx=np.zeros(len(half_life)+1)
-        #     dydx[0]=-y[0]/half_life[0]
-        #     dydx[1]=y[0]/half_life[0]-y[1]/half_life[1]
-        #     dydx[2]=y[1]/half_life[1]
-            
-        # dNdt = np.zeros(len(half_lives)+1)
         
-        # dNdt[0] = -N[i-1]/half_lives[i-1]
-        # dNdt[1] = -N[i]/half_lives[i] + N[i-1]/half_lives[i-1]
-        # dNdt[2] = N[i]/half_lives[i]
-        
-        dNdt = []
+        dNdt = np.zeros(len(half_lives))
         
         for i in range(1, len(half_lives)):
         
-            dNdt_init = -N[i-1]/half_lives[i]
+            dNdt_init = -N[i-1]/half_lives[i-1]
             dNdt_both = -N[i]/half_lives[i] + N[i-1]/half_lives[i-1]
             dNdt_fin = N[i]/half_lives[i]
-            
-            dNdt.append(dNdt_init)
-            dNdt.append(dNdt_both)
-            dNdt.append(dNdt_fin)
         
-        dNdt = np.array(dNdt)
+            dNdt[i-1] = dNdt_init + dNdt[i-1]
+            dNdt[i] = dNdt_both # need to figure out what to update
+        
+        return dNdt
         
     solve_ode = integrate.solve_ivp(decays, [min(t), max(t)], N0, method = 'Radau', t_eval = t)
     
     return solve_ode
         
-t = np.logspace(0, 9, 1000) # 1000 time points over 1e9 (1 billion) years
+t = np.logspace(0, 9, 10040) # 1000 time points over 1e9 (1 billion) years
 N0 = np.zeros(len(half_lives))
 N0[0] = 1
-# N = U238_products(half_lives, t, N0)
+N = U238_products(half_lives, t, N0)
 
 #-----------------------------------------------------------------------------
 # (Q3)
@@ -183,10 +181,6 @@ x = data[:, 0]
 y = data[:, 1]
 z = data[:, 2]
 
-# fig1 = plt.figure()
-# ax = fig1.add_subplot(111, projection='3d')
-# ax.scatter(x,y,z)
-
 """
 A rotationally symmetric paraboloid is described by
     
@@ -195,7 +189,10 @@ A rotationally symmetric paraboloid is described by
 and we want to fit for x_0, y_0, z_0, and a. However, we
 see that x_0 and y_0 are not linear in the equation. In order
 to make this equation linear in its parameters, we must substitute
-new parameters. Let b = -2ax_0, c = -2ay_0, and d = a(x_0^2 + y_0^2) + z_0
+new parameters. Let b = -2ax_0, c = -2ay_0, and d = a(x_0^2 + y_0^2) + z_0;
+our new equation becomes
+
+    z = a(x^2 + y^2) + bx + cy + d
 """
 
 def dish_fit(data):
@@ -227,9 +224,15 @@ print('(3)')
 print('Std Dev Between Fit and True = ', np.std(z_new - z)) # Not the complete error, need chi_sq!
 print('-------------------------------')
 
+# fig3 = plt.figure()
+# ax = fig3.add_subplot(111, projection='3d')
+# ax.scatter(x,y,z)
 
 # x_new = np.linspace(min(x), max(x), 50)
 # y_new = np.linspace(min(y), max(y), 50)
 # X, Y = np.meshgrid(x_new, y_new)
 # z_new = a*(X**2 + Y**2) + b*X +c*Y + d
 # ax.scatter(X,Y,z_new)
+
+sys.stdout = orig_stdout
+f.close()
