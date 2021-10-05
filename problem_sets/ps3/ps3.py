@@ -244,21 +244,24 @@ def dish_fit(data):
     A[:, 2] = y
     A[:, 3] = np.ones(nd)
     
-    N = np.eye(nd)*(0.01)**2 # temporary
+    # N = np.eye(nd)*(0.01)**2 # temporary
     
-    Ninv = np.linalg.pinv(N)
+    # Ninv = np.linalg.pinv(N)
     
-    m = np.linalg.pinv(A.T@Ninv@A)@A.T@Ninv@z # a, b, c, d
+    m = np.linalg.pinv(A.T @ A) @ A.T @ z # a, b, c, d
     
-    m_errs = np.sqrt(np.diag(np.linalg.pinv(A.T@Ninv@A)))
+    # Ninv = 1
     
-    return m, m_errs
+    # m_errs = np.sqrt(np.diag(np.linalg.pinv(A.T @ Ninv @ A)))
+    
+    return m# , m_errs
 
-m, m_errs = dish_fit(data)
+m = dish_fit(data)
 z_new = m[0]*(x**2 + y**2) + m[1]*x + m[2]*y + m[3]
 print('-------------------------------')
 print('(3)')
-print('Std Dev Between Fit and True = ', np.std(z_new - z)) # Not the complete error, need chi_sq!
+print(f'Best fit for a is {m[0]}, for b is {m[1]},\n for c is {m[2]}, and for d is {m[3]}.')
+# print('Std Dev Between Fit and True = ', np.std(z_new - z)) # Not the complete error, need chi_sq!
 print('-------------------------------')
 
 # f4 = plt.figure()
