@@ -143,13 +143,18 @@ print('-------------------------------')
 #-----------------------------------------------------------------------------
 # (Q2)
 
+#-------------------------------
+# (a) U238_products solves for the decay products of U238 using
+# scipy.integrate's solve_ivp. 
+
 half_lives = np.array([1.41e17, 2.0822e6, 24120, 7.74e12,
               2.38e12, 5.05e10, 3.3e5, 186, 1608,
-              1194, 164.3e-6, 7.03e8, 1.58e8, 1.20e7])*3.171e-08 # years
+              1194, 164.3e-6, 7.03e8, 1.58e8, 1.20e7, 1e30])*3.171e-08 # years
 
 def U238_products(half_lives, t, N0):
     
-    def decays(t, N, half_lives = half_lives):
+    def decays(t, N, half_lives = half_lives): # Define our ODE equations
+                                               # in a loop.
         
         dNdt = np.zeros(len(half_lives))
         
@@ -157,9 +162,12 @@ def U238_products(half_lives, t, N0):
         
             dNdt_init = -N[i-1]/half_lives[i-1]
             dNdt_both = -N[i]/half_lives[i] + N[i-1]/half_lives[i-1]
-            # dNdt_fin = N[i]/half_lives[i]
+            dNdt_fin = N[i]/half_lives[i] # how to include this?
         
-            dNdt[i-1] = dNdt_init + dNdt[i-1]
+            dNdt[i-1] = dNdt_init + dNdt[i-1] # Update the previous product
+                                              # to account for decays into
+                                              # a new product
+                                              
             dNdt[i] = dNdt_both # need to figure out what to update
         
         return dNdt
@@ -167,11 +175,38 @@ def U238_products(half_lives, t, N0):
     solve_ode = integrate.solve_ivp(decays, [min(t), max(t)], N0, method = 'Radau', t_eval = t)
     
     return solve_ode
+
+# We need to define an array N0 of initial conditions. N0[0] = 1 to represent
+# a pure sample of Uranium, the 1 being convenient so as to have a normalized
+# output. N contains all the information return by the ODE solver under
+# U238_products, where N.y[i] returns the ith product for all times t.
         
-t = np.logspace(0, 9, 10040) # 1000 time points over 1e9 (1 billion) years
+t = np.logspace(0, 11, 10000) # 1000 time points over 1e11 (100 billion) years
 N0 = np.zeros(len(half_lives))
 N0[0] = 1
 N = U238_products(half_lives, t, N0)
+
+# for i in range(len(half_lives)):
+#     N.y[i] = abs(N.y[i])
+
+#-------------------------------
+# (b)
+
+# NEED TO FIX WHATEVER'S GOING ON HERE
+
+# f2 = plt.figure()
+# plt.plot(t, N.y[-1]/N.y[0]) # Plot ratio of Pb206/U238
+# plt.xlabel('Time (years)')
+# plt.ylabel('$N_{Pb206}$ / $N_{U238}$')
+# plt.title('Ratio of Pb206 to U238')
+# plt.savefig("./A3Q2_Pb206_U238_ratio.png")
+
+# f3 = plt.figure()
+# plt.plot(t, N.y[4]/N.y[3]) # Plot ratio of Th230/U234
+# plt.xlabel('Time (years)')
+# plt.ylabel('$N_{Th230}$ / $N_{U234}$')
+# plt.title('Ratio of Th230 to U234')
+# plt.savefig("./A3Q2_Th230_U234_ratio.png")
 
 #-----------------------------------------------------------------------------
 # (Q3)
@@ -213,19 +248,21 @@ def dish_fit(data):
     
     Ninv = np.linalg.pinv(N)
     
-    m = np.linalg.pinv(A.T@Ninv@A)@A.T@Ninv@z
+    m = np.linalg.pinv(A.T@Ninv@A)@A.T@Ninv@z # a, b, c, d
     
-    return m[0], m[1], m[2], m[3] # a,b,c,d
+    m_errs = np.sqrt(np.diag(np.linalg.pinv(A.T@Ninv@A)))
+    
+    return m, m_errs
 
-a,b,c,d = dish_fit(data)
-z_new = a*(x**2 + y**2) + b*x +c*y + d
+m, m_errs = dish_fit(data)
+z_new = m[0]*(x**2 + y**2) + m[1]*x + m[2]*y + m[3]
 print('-------------------------------')
 print('(3)')
 print('Std Dev Between Fit and True = ', np.std(z_new - z)) # Not the complete error, need chi_sq!
 print('-------------------------------')
 
-# fig3 = plt.figure()
-# ax = fig3.add_subplot(111, projection='3d')
+# f4 = plt.figure()
+# ax = f4.add_subplot(111, projection='3d')
 # ax.scatter(x,y,z)
 
 # x_new = np.linspace(min(x), max(x), 50)
