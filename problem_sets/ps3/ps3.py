@@ -123,11 +123,20 @@ def ytrue(x):
     return c0 * np.exp(np.arctan(x))
 
 # f1 = plt.figure()
+# # plt.subplot(1,2,1)
 # plt.plot(x, ytrue(x), label = 'True Function')
 # plt.plot(x, ans_step, label = 'rk4_step, 200 steps')
 # plt.plot(x, ans_stepd, label = 'rk4_stepd, 200 steps')
 # plt.plot(x_new, ans_stepd_new, label = 'rk4_stepd, 73 steps')
 # plt.legend()
+# # plt.subplot(1,2,2)
+# # plt.plot(x, ytrue(x), label = 'True Function')
+# # plt.plot(x, ans_step, label = 'rk4_step, 200 steps')
+# # plt.plot(x, ans_stepd, label = 'rk4_stepd, 200 steps')
+# # plt.plot(x_new, ans_stepd_new, label = 'rk4_stepd, 73 steps')
+# # plt.xlim(1,2)
+# # plt.ylim(ytrue(x[np.where(x == 1)]) + 1, ytrue(x[np.where(x == 2)]) + 1)
+# # plt.legend()
 # plt.savefig("./A3Q1.png")
 
 print('-------------------------------')
@@ -162,13 +171,13 @@ def U238_products(half_lives, t, N0):
         
             dNdt_init = -N[i-1]/half_lives[i-1]
             dNdt_both = -N[i]/half_lives[i] + N[i-1]/half_lives[i-1]
-            dNdt_fin = N[i]/half_lives[i] # how to include this?
-        
+            dNdt_fin = N[i]/half_lives[i] 
+            
             dNdt[i-1] = dNdt_init + dNdt[i-1] # Update the previous product
                                               # to account for decays into
                                               # a new product
                                               
-            dNdt[i] = dNdt_both # need to figure out what to update
+            dNdt[i] = dNdt_both + dNdt_fin
         
         return dNdt
         
@@ -186,27 +195,26 @@ N0 = np.zeros(len(half_lives))
 N0[0] = 1
 N = U238_products(half_lives, t, N0)
 
-# for i in range(len(half_lives)):
-#     N.y[i] = abs(N.y[i])
-
 #-------------------------------
 # (b)
 
-# NEED TO FIX WHATEVER'S GOING ON HERE
+f2 = plt.figure()
+plt.plot(t, N.y[-1]/N.y[0]) # Plot ratio of Pb206/U238
+plt.xlabel('Time (years)')
+plt.ylabel('$N_{Pb206}$ / $N_{U238}$')
+plt.title('Ratio of Pb206 to U238')
+# plt.xscale('log')
+plt.savefig("./A3Q2_Pb206_U238_ratio.png")
 
-# f2 = plt.figure()
-# plt.plot(t, N.y[-1]/N.y[0]) # Plot ratio of Pb206/U238
-# plt.xlabel('Time (years)')
-# plt.ylabel('$N_{Pb206}$ / $N_{U238}$')
-# plt.title('Ratio of Pb206 to U238')
-# plt.savefig("./A3Q2_Pb206_U238_ratio.png")
+tc = 6000
 
-# f3 = plt.figure()
-# plt.plot(t, N.y[4]/N.y[3]) # Plot ratio of Th230/U234
-# plt.xlabel('Time (years)')
-# plt.ylabel('$N_{Th230}$ / $N_{U234}$')
-# plt.title('Ratio of Th230 to U234')
-# plt.savefig("./A3Q2_Th230_U234_ratio.png")
+f3 = plt.figure()
+plt.plot(t[:tc], N.y[4][:tc]/N.y[3][:tc]) # Plot ratio of Th230/U234
+plt.xlabel('Time (years)')
+plt.ylabel('$N_{Th230}$ / $N_{U234}$')
+plt.title('Ratio of Th230 to U234')
+# plt.xscale('log')
+plt.savefig("./A3Q2_Th230_U234_ratio.png")
 
 #-----------------------------------------------------------------------------
 # (Q3)
@@ -238,26 +246,41 @@ def dish_fit(data):
     nd = len(z) # n data
     nm = 4 # n model, i.e. a,b,c,d --> 4 parameters
     
+    # Make A:
+    
     A = np.zeros((nd, nm))
     A[:, 0] = x**2 + y**2
     A[:, 1] = x
     A[:, 2] = y
     A[:, 3] = np.ones(nd)
+                
+    #-------------------------------
+    # Solve for m the simple way:
+        
+    # m = np.linalg.pinv(A.T @ A) @ A.T @ z # a,b,c,d
     
-    # N = np.eye(nd)*(0.01)**2 # temporary
+    # Or to make it a little more robust, the SVD way:
+        
+    U, S, V = np.linalg.svd(A, 0) # Note that Python does SVD as A = USV!
+    m = V.T @ np.diag(1/S) @ U.T @ z # a, b, c, d
     
-    # Ninv = np.linalg.pinv(N)
+    # Note that in both methods above, we have assumed N = I.
     
-    m = np.linalg.pinv(A.T @ A) @ A.T @ z # a, b, c, d
+    #-------------------------------
+    # Now we make an assumption for sigma, and use this to construct N.
+    # From this, we can calculate the covariance matrix, and take the 
+    # square root of the diagonal values to get our errors on m.
     
-    # Ninv = 1
-    
-    # m_errs = np.sqrt(np.diag(np.linalg.pinv(A.T @ Ninv @ A)))
-    
-    return m# , m_errs
+    z_new = m[0]*(x**2 + y**2) + m[1]*x + m[2]*y + m[3]
+    sigma = np.std(z - z_new)
+    Ninv = np.eye(nd) * (1/sigma)
+    cov_mat = np.linalg.pinv(A.T @ Ninv @ A)
+    m_errs = np.sqrt(np.diag(cov_mat))
+    #-------------------------------
+        
+    return z_new, m, m_errs
 
-m = dish_fit(data)
-z_new = m[0]*(x**2 + y**2) + m[1]*x + m[2]*y + m[3]
+z_new, m, m_errs = dish_fit(data)
 print('-------------------------------')
 print('(3)')
 print(f'Best fit for a is {m[0]}, for b is {m[1]},\n for c is {m[2]}, and for d is {m[3]}.')
