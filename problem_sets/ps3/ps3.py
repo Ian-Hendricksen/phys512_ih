@@ -122,31 +122,28 @@ def ytrue(x):
     c0 = y[0]/np.exp(np.arctan(x[0]))
     return c0 * np.exp(np.arctan(x))
 
-# f1 = plt.figure()
-# # plt.subplot(1,2,1)
+f1 = plt.figure()
+# plt.subplot(1,2,1)
+plt.plot(x, ytrue(x), label = 'True Function')
+plt.plot(x, ans_step, label = 'rk4_step, 200 steps')
+plt.plot(x, ans_stepd, label = 'rk4_stepd, 200 steps')
+plt.plot(x_new, ans_stepd_new, label = 'rk4_stepd, 73 steps')
+plt.legend()
+# plt.subplot(1,2,2)
 # plt.plot(x, ytrue(x), label = 'True Function')
 # plt.plot(x, ans_step, label = 'rk4_step, 200 steps')
 # plt.plot(x, ans_stepd, label = 'rk4_stepd, 200 steps')
 # plt.plot(x_new, ans_stepd_new, label = 'rk4_stepd, 73 steps')
+# plt.xlim(1,2)
+# plt.ylim(ytrue(x[np.where(x == 1)]) + 1, ytrue(x[np.where(x == 2)]) + 1)
 # plt.legend()
-# # plt.subplot(1,2,2)
-# # plt.plot(x, ytrue(x), label = 'True Function')
-# # plt.plot(x, ans_step, label = 'rk4_step, 200 steps')
-# # plt.plot(x, ans_stepd, label = 'rk4_stepd, 200 steps')
-# # plt.plot(x_new, ans_stepd_new, label = 'rk4_stepd, 73 steps')
-# # plt.xlim(1,2)
-# # plt.ylim(ytrue(x[np.where(x == 1)]) + 1, ytrue(x[np.where(x == 2)]) + 1)
-# # plt.legend()
-# plt.savefig("./A3Q1.png")
+plt.savefig("./A3Q1.png")
 
 print('-------------------------------')
 print('(1)')
 print('rk4_step error (200 steps) = ', np.std(ytrue(x) - ans_step))
 print('rk4_stepd error (200 steps) = ', np.std(ytrue(x) - ans_stepd))
 print('rk4_stepd error (73 steps) = ', np.std(ytrue(x_new) - ans_stepd_new))
-
-# Something wrong here - should the stepd error be smaller?
-
 print('-------------------------------')
 
 #-----------------------------------------------------------------------------
@@ -272,8 +269,8 @@ def dish_fit(data):
     # square root of the diagonal values to get our errors on m.
     
     z_new = m[0]*(x**2 + y**2) + m[1]*x + m[2]*y + m[3]
-    sigma = np.std(z - z_new)
-    Ninv = np.eye(nd) * (1/sigma)
+    sigma = np.std(abs(z - z_new))
+    Ninv = np.eye(nd) * (1/sigma**2)
     cov_mat = np.linalg.pinv(A.T @ Ninv @ A)
     m_errs = np.sqrt(np.diag(cov_mat))
     #-------------------------------
@@ -281,21 +278,18 @@ def dish_fit(data):
     return z_new, m, m_errs
 
 z_new, m, m_errs = dish_fit(data)
+foc = 1/(4000*m[0])
+foc_err = (1/4000)*(1/m[0]**2)*m_errs[0]
 print('-------------------------------')
 print('(3)')
 print(f'Best fit for a is {m[0]}, for b is {m[1]},\n for c is {m[2]}, and for d is {m[3]}.')
-# print('Std Dev Between Fit and True = ', np.std(z_new - z)) # Not the complete error, need chi_sq!
+print(f'The error on a is {m_errs[0]}, for b is {m_errs[1]},\n for c is {m_errs[2]}, and for d is {m_errs[3]}.')
+print(f'The focal length f is {foc} meters, with error +/- {foc_err} meters.')
 print('-------------------------------')
 
 # f4 = plt.figure()
 # ax = f4.add_subplot(111, projection='3d')
 # ax.scatter(x,y,z)
-
-# x_new = np.linspace(min(x), max(x), 50)
-# y_new = np.linspace(min(y), max(y), 50)
-# X, Y = np.meshgrid(x_new, y_new)
-# z_new = a*(X**2 + Y**2) + b*X +c*Y + d
-# ax.scatter(X,Y,z_new)
 
 sys.stdout = orig_stdout
 f.close()
