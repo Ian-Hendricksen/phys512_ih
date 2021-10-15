@@ -8,6 +8,7 @@ Created on Sun Oct 10 14:53:56 2021
 import numpy as np
 import matplotlib.pyplot as plt
 import camb
+import datetime
 
 #-----------------------------------------------------------------------------
 # (Q1)
@@ -40,6 +41,7 @@ def get_spectrum(pars,lmax=3000):
     return tt[2:]
 
 m_guess = np.array([69,0.022,0.12,0.06,2.1e-9,0.95])
+# m_guess = np.array([65,0.02,0.1,0.07,2.00e-9,0.97])
 
 def get_spectrum_derivs(fun, m):
     """
@@ -100,6 +102,12 @@ def lvmq(m, fun, deriv_fun, x_data, y_data, y_errs, n):
     # fun: function to fit
     # n: number of iterations
     
+    t1 = datetime.datetime.now()
+    
+    print('==============')
+    print('---LVMQ Fit---')
+    print('==============')
+    
     y_model_0 = fun(m)
     y_model_0 = y_model_0[:len(y_data)]
     chisq_0 = np.sum(((y_model_0 - y_data)/y_errs)**2) # fun(m)[0] = y_model
@@ -109,6 +117,8 @@ def lvmq(m, fun, deriv_fun, x_data, y_data, y_errs, n):
     Ninv = np.eye(len(y_data))*(1/y_errs**2)
     
     for i in range(n):
+        
+        print('-------------')
         
         if m_new[3] < 0.01:
             m_new[3] = 0.01
@@ -121,9 +131,17 @@ def lvmq(m, fun, deriv_fun, x_data, y_data, y_errs, n):
         r = y_data - y_model
         
         # dm = (A'^T N^-1 A' + lamda @ diag(A'^T N^-1 A'))^-1 @ A'^T N^-1 r
-        dm = np.linalg.pinv(derivs_model.T @ Ninv @ derivs_model + lamda * 
+        dm = np.linalg.inv(derivs_model.T @ Ninv @ derivs_model + lamda * 
                             np.diag(np.diag(derivs_model.T @ Ninv @ derivs_model))) @ derivs_model.T @ Ninv @ r
         
+        print('d_H0 =', dm[0])
+        print('d_ombh2 =', dm[1])
+        print('d_omch2 =', dm[2])
+        print('d_tau =', dm[3])
+        print('d_As =', dm[4])
+        print('d_ns =', dm[5])
+        print('lamda = ', lamda)
+            
         y_model_step = fun(m_new + dm)
         y_model_step = y_model_step[:len(y_data)]
         # derivs_model_step = deriv_fun(fun, m_new + dm)
@@ -139,52 +157,145 @@ def lvmq(m, fun, deriv_fun, x_data, y_data, y_errs, n):
             if lamda < 0.5:
                 lamda = 0
             m_new = m_new + dm
+            chisq_0 = chisq_step
         
         else: 
-            lamda = lamda * 2
+            if lamda < 0.01:
+                lamda = 1
+            else:
+                lamda = lamda * 2
             
         print('m_new is', m_new)
         print('new chisq is', chisq_step)
+        dof = len(y_data) - len(m_new)
+        x = (chisq_step - dof)/np.sqrt(2*dof)
+        print(f'new chisq is {x} std devs from mean ({dof})')
             
         # Get m errors
         
-        cov_mat = np.linalg.pinv(curv)
+        cov_mat = np.linalg.inv(curv)
         m_new_errs = np.sqrt(np.diag(cov_mat))
-            
+        
+    t2 = datetime.datetime.now()
+    print(f'LVMQ runtime was {t2-t1}')
+    print('==============')
+                    
     return m_new, m_new_errs, curv
 
-m_lvmq, m_lvmq_errs, curv_lvmq = lvmq(m_guess, get_spectrum, get_spectrum_derivs, ell, spec, errs, 10)
+# m_lvmq, m_lvmq_errs, curv_lvmq = lvmq(m_guess, get_spectrum, get_spectrum_derivs, ell, spec, errs, 10)
 
-f = open('planck_fit_params.txt', 'w')
-f.write(f'Best-fit parameters are {m_lvmq}')
-f.write(f'Parameter errors are {m_lvmq_errs}')
-f.close()
+# f = open('planck_fit_params.txt', 'w')
+# f.write(f'Best-fit parameters are {m_lvmq}')
+# f.write(f'\nParameter errors are {m_lvmq_errs}')
+# f.close()
 
-"""Make sure to write parameters and errors to planck_fit_params.txt!!!"""
+# This is temporary so I can play with mcmc without running lvmq:
+
+# np.savetxt('m_lvmq.txt', m_lvmq)
+# np.savetxt('curv_lvmq.txt', curv_lvmq)
+
+curv_lvmq = np.loadtxt('curv_lvmq.txt')
     
 #-----------------------------------------------------------------------------
 # (Q3)
 
-def mcmc(m, fun, curv, x_data, y_data, n):
+def mcmc(m, fun, curv, x_data, y_data, y_errs, n):
     
     # m: model parameters (guess)
     # fun: function to fit
     # curv: curvature matrix from lvmq
     # n: number of steps
-    # assert(curv.shape[0] == n) # Should have as many rows in curv as we have steps n --> edit: maybe not?
     
-    chisq_0 = np.sum((fun(m)[0] - y_data)**2) # fun(m)[0] = y_model
-    chain = np.zeros([len(n), len(m)]) # n_step x n_m
-    chisq_vals = np.zeros(len(n))
+    t1 = datetime.datetime.now()
+    
+    print('==============')
+    print('---MCMC Fit---')
+    print('==============')
+    
+    nm = len(m)
+    
+    y_model_0 = fun(m)
+    y_model_0 = y_model_0[:len(y_data)]
+    chisq_0 = np.sum(((y_model_0 - y_data)/y_errs)**2) # fun(m)[0] = y_model
+    print('chisq_0 is', chisq_0)
+    
+    chain = np.zeros([n, len(m)]) # n_step x n_m
+    chisq_vals = np.zeros(n)
+    
+    L = np.linalg.cholesky(np.linalg.inv(curv)) # L = stepsize
     
     for i in range(n):
-        # m_trial = curv[:, i] # this needs to be checked
-        chisq_trial = np.sum((fun(m)[0] - y_data)**2)
+        
+        print('-------------')
+        
+        m_trial = m + L @ np.random.randn(nm) # draw trial steps from curvature
+                                              # matrix from lvmq; need to scale it?
+        if m_trial[3] < 0.01:
+            m_trial[3] = 0.01
+            
+        print('m_trial is', m_trial)
+            
+        y_trial = fun(m_trial)
+        y_trial = y_trial[:len(y_data)]
+    
+        chisq_trial = np.sum(((y_trial - y_data)/y_errs)**2)
+        
+        print('chisq_trial is', chisq_trial)
+        
         d_chisq = chisq_trial - chisq_0
         prob = np.exp(-0.5*d_chisq**2)
         
-        # if chisq_trial < chisq_0:
-            
+        if np.random.randn(1) < prob:
+            m = m_trial
+            chisq_0 = chisq_trial
+            print('chisq accepted')
+        chain[i, :] = m
+        chisq_vals[i] = chisq_0
+        
+    t2 = datetime.datetime.now()
+    print(f'MCMC runtime was {t2-t1}')
+    print('==============')    
+    
+    return chain, chisq_vals
+
+chain1_mcmc, chisq1_mcmc = mcmc(m_guess, get_spectrum, curv_lvmq, ell, spec, errs, 200)
+
+mcmc_info_merged = np.concatenate((chisq1_mcmc.reshape(chain1_mcmc.shape[0], 1), chain1_mcmc), axis = 1)
+np.savetxt('planck_chain.txt', mcmc_info_merged)
+
+# Determine if chain has converged:
+    
+f1 = plt.figure()
+
+plt.subplot(1,2,1)
+plt.plot(np.arange(chain1_mcmc.shape[0]), chain1_mcmc[:, 0]) # Should be white noise
+
+plt.subplot(1,2,2)
+plt.plot(np.arange(chain1_mcmc.shape[0]), abs(np.fft.fft(chain1_mcmc[:, 0])))
+plt.yscale('log'); plt.xscale('log')
+
+m_mcmc = np.zeros(chain1_mcmc.shape[1])
+m_errs_mcmc = np.zeros(chain1_mcmc.shape[1])
+for i in range(chain1_mcmc.shape[1]):
+    m_mcmc = np.mean(chain1_mcmc[:, i])
+    m_errs_mcmc = np.std(chain1_mcmc[:, i])
+    
+print(f'MCMC parameters are {m_mcmc}')
+print(f'MCMC errors are {m_errs_mcmc}')
+
+# Calculate om_lamda and propagate errors:
+
+hsq = (1/100)**2 * (m_mcmc[0])**2 # H0 = m_mcmc[0], h = H0/100
+omb = m_mcmc[1]/hsq
+omc = m_mcmc[2]/hsq
+om_lamda = 1 - omb - omc
+
+hsq_err = abs(2 * hsq * (1/m_mcmc[0]) * m_errs_mcmc)
+omb_err = omb * np.sqrt((m_errs_mcmc[1]/m_mcmc[1])**2 + (hsq_err/hsq)**2)
+omc_err = omb * np.sqrt((m_errs_mcmc[2]/m_mcmc[2])**2 + (hsq_err/hsq)**2)
+om_lamda_err = np.sqrt(omb_err**2 + omc_err**2)
+
+print(f'Dark energy density is {om_lamda} with error {om_lamda_err}')
             
 #-----------------------------------------------------------------------------
 # (Q4)
