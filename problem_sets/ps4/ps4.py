@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import camb
 import datetime
 
+t1 = datetime.datetime.now()
+
 #-----------------------------------------------------------------------------
 # (Q1)
 
@@ -17,6 +19,9 @@ import datetime
 
 #-----------------------------------------------------------------------------
 # (Q2)
+
+print('=======================')
+print('(Q2)')
 
 planck=np.loadtxt('COM_PowerSpect_CMB-TT-full_R3.01.txt',skiprows=1)
 ell=planck[:,0] # x data
@@ -119,6 +124,7 @@ def lvmq(m, fun, deriv_fun, x_data, y_data, y_errs, n):
     for i in range(n):
         
         print('-------------')
+        print('Step', i)
         
         if m_new[3] < 0.01:
             m_new[3] = 0.01
@@ -132,7 +138,8 @@ def lvmq(m, fun, deriv_fun, x_data, y_data, y_errs, n):
         
         # dm = (A'^T N^-1 A' + lamda @ diag(A'^T N^-1 A'))^-1 @ A'^T N^-1 r
         dm = np.linalg.inv(derivs_model.T @ Ninv @ derivs_model + lamda * 
-                            np.diag(np.diag(derivs_model.T @ Ninv @ derivs_model))) @ derivs_model.T @ Ninv @ r
+                            np.diag(np.diag(derivs_model.T @ Ninv @ derivs_model))
+                            ) @ derivs_model.T @ Ninv @ r
         
         print('d_H0 =', dm[0])
         print('d_ombh2 =', dm[1])
@@ -182,24 +189,28 @@ def lvmq(m, fun, deriv_fun, x_data, y_data, y_errs, n):
                     
     return m_new, m_new_errs, curv
 
-# m_lvmq, m_lvmq_errs, curv_lvmq = lvmq(m_guess, get_spectrum, get_spectrum_derivs, ell, spec, errs, 10)
+m_lvmq, m_lvmq_errs, curv_lvmq = lvmq(m_guess, get_spectrum, get_spectrum_derivs, ell, spec, errs, 25)
 
-# f = open('planck_fit_params.txt', 'w')
-# f.write(f'Best-fit parameters are {m_lvmq}')
-# f.write(f'\nParameter errors are {m_lvmq_errs}')
-# f.close()
+f = open('planck_fit_params.txt', 'w')
+f.write('Levenberg-Marquardt Parameters:')
+f.write(f'\nBest-fit parameters are {m_lvmq}')
+f.write(f'\nParameter errors are {m_lvmq_errs}')
+f.close()
+
+np.savetxt('m_lvmq.txt', m_lvmq)
+np.savetxt('curv_lvmq.txt', curv_lvmq)
 
 # This is temporary so I can play with mcmc without running lvmq:
 
-# np.savetxt('m_lvmq.txt', m_lvmq)
-# np.savetxt('curv_lvmq.txt', curv_lvmq)
-
-curv_lvmq = np.loadtxt('curv_lvmq.txt')
+# curv_lvmq = np.loadtxt('curv_lvmq.txt')
     
 #-----------------------------------------------------------------------------
 # (Q3)
 
-def mcmc(m, fun, curv, x_data, y_data, y_errs, n):
+print('=======================')
+print('(Q3)')
+
+def mcmc(m, fun, curv, x_data, y_data, y_errs, n, m_priors = None, m_priors_errs = None):
     
     # m: model parameters (guess)
     # fun: function to fit
@@ -216,7 +227,14 @@ def mcmc(m, fun, curv, x_data, y_data, y_errs, n):
     
     y_model_0 = fun(m)
     y_model_0 = y_model_0[:len(y_data)]
-    chisq_0 = np.sum(((y_model_0 - y_data)/y_errs)**2) # fun(m)[0] = y_model
+    
+    # Check if we have priors, and if so, include likelihood of priors:
+    
+    if m_priors is None:
+        chisq_0 = np.sum(((y_model_0 - y_data)/y_errs)**2)
+    else:
+        chisq_0 = np.sum(((y_model_0 - y_data)/y_errs)**2) + np.sum(((m - m_priors)/m_priors_errs)**2)
+    
     print('chisq_0 is', chisq_0)
     
     chain = np.zeros([n, len(m)]) # n_step x n_m
@@ -227,18 +245,25 @@ def mcmc(m, fun, curv, x_data, y_data, y_errs, n):
     for i in range(n):
         
         print('-------------')
+        print('Step', i)
         
-        m_trial = m + L @ np.random.randn(nm) # draw trial steps from curvature
-                                              # matrix from lvmq; need to scale it?
-        if m_trial[3] < 0.01:
-            m_trial[3] = 0.01
+        m_trial = m + 0.1 * L @ np.random.randn(nm) # draw trial steps from curvature
+                                                    # matrix from lvmq; need to scale it? --> yes
+        if m_priors is None:
+            if m_trial[3] < 0.01:
+                m_trial[3] = 0.01 # This constraint makes my chains happier
             
         print('m_trial is', m_trial)
             
         y_trial = fun(m_trial)
         y_trial = y_trial[:len(y_data)]
-    
-        chisq_trial = np.sum(((y_trial - y_data)/y_errs)**2)
+        
+        # Again check if we have priors and include likelihood if so:
+        
+        if m_priors is None:
+            chisq_trial = np.sum(((y_trial - y_data)/y_errs)**2)
+        else:
+            chisq_trial = np.sum(((y_trial - y_data)/y_errs)**2) + np.sum(((m - m_priors)/m_priors_errs)**2)
         
         print('chisq_trial is', chisq_trial)
         
@@ -258,7 +283,7 @@ def mcmc(m, fun, curv, x_data, y_data, y_errs, n):
     
     return chain, chisq_vals
 
-chain1_mcmc, chisq1_mcmc = mcmc(m_guess, get_spectrum, curv_lvmq, ell, spec, errs, 200)
+chain1_mcmc, chisq1_mcmc = mcmc(m_guess, get_spectrum, curv_lvmq, ell, spec, errs, 5000)
 
 mcmc_info_merged = np.concatenate((chisq1_mcmc.reshape(chain1_mcmc.shape[0], 1), chain1_mcmc), axis = 1)
 np.savetxt('planck_chain.txt', mcmc_info_merged)
@@ -272,13 +297,15 @@ plt.plot(np.arange(chain1_mcmc.shape[0]), chain1_mcmc[:, 0]) # Should be white n
 
 plt.subplot(1,2,2)
 plt.plot(np.arange(chain1_mcmc.shape[0]), abs(np.fft.fft(chain1_mcmc[:, 0])))
-plt.yscale('log'); plt.xscale('log')
+plt.yscale('log'); plt.xscale('log'); # plt.xlim(1e-3, 1e3)
+
+plt.savefig("./H0 chain and fft 5000 its.png")
 
 m_mcmc = np.zeros(chain1_mcmc.shape[1])
 m_errs_mcmc = np.zeros(chain1_mcmc.shape[1])
 for i in range(chain1_mcmc.shape[1]):
-    m_mcmc = np.mean(chain1_mcmc[:, i])
-    m_errs_mcmc = np.std(chain1_mcmc[:, i])
+    m_mcmc[i] = np.mean(chain1_mcmc[:, i])
+    m_errs_mcmc[i] = np.std(chain1_mcmc[:, i])
     
 print(f'MCMC parameters are {m_mcmc}')
 print(f'MCMC errors are {m_errs_mcmc}')
@@ -290,12 +317,93 @@ omb = m_mcmc[1]/hsq
 omc = m_mcmc[2]/hsq
 om_lamda = 1 - omb - omc
 
-hsq_err = abs(2 * hsq * (1/m_mcmc[0]) * m_errs_mcmc)
+hsq_err = abs(2 * hsq * (1/m_mcmc[0]) * m_errs_mcmc[0])
 omb_err = omb * np.sqrt((m_errs_mcmc[1]/m_mcmc[1])**2 + (hsq_err/hsq)**2)
 omc_err = omb * np.sqrt((m_errs_mcmc[2]/m_mcmc[2])**2 + (hsq_err/hsq)**2)
 om_lamda_err = np.sqrt(omb_err**2 + omc_err**2)
 
 print(f'Dark energy density is {om_lamda} with error {om_lamda_err}')
+
+f = open('om_lamda.txt', 'w')
+f.write(f'Best-fit for dark energy density (om_lamda) is {om_lamda}')
+f.write(f'\nDark energy density error is {om_lamda_err}')
+f.close()
             
 #-----------------------------------------------------------------------------
 # (Q4)
+
+print('=======================')
+print('(Q4)')
+
+# First construct our priors arrays to feed to mcmc:
+
+tau_prior = 0.0540
+tau_prior_err = 0.0074
+
+m_priors = np.zeros(len(m_guess))
+m_priors[3] = tau_prior
+m_priors_errs = np.zeros(len(m_guess)) + 1e15
+m_priors_errs[3] = tau_prior_err
+
+# Run the chain and save:
+
+chain_mcmc_priors, chisq_mcmc_priors = mcmc(m_guess, get_spectrum, curv_lvmq, ell, spec, errs, 5000, m_priors, m_priors_errs)
+
+mcmc_prior_info_merged = np.concatenate((chisq_mcmc_priors.reshape(chain_mcmc_priors.shape[0], 1), chain_mcmc_priors), axis = 1)
+np.savetxt('planck_chain_tauprior.txt', mcmc_prior_info_merged)
+
+m_mcmc_priors = np.zeros(chain_mcmc_priors.shape[1]) # "m from mcmc using priors"
+m_errs_mcmc_priors = np.zeros(chain_mcmc_priors.shape[1])
+for i in range(chain_mcmc_priors.shape[1]):
+    m_mcmc_priors[i] = np.mean(chain_mcmc_priors[:, i])
+    m_errs_mcmc_priors[i] = np.std(chain_mcmc_priors[:, i])
+    
+print(f'MCMC w/ priors parameters are {m_mcmc_priors}')
+print(f'MCMC w/ priors errors are {m_errs_mcmc_priors}')
+
+f = open('planck_fit_params_mcmc_priors.txt', 'w')
+f.write('MCMC with priors:')
+f.write(f'\nBest-fit parameters are {m_mcmc_priors}')
+f.write(f'\nParameter errors are {m_errs_mcmc_priors}')
+f.close()
+
+# Check for convergence:
+    
+f2 = plt.figure()
+
+plt.suptitle('H0 and its FFT for MCMC w/ Priors')
+
+plt.subplot(1,2,1)
+plt.plot(np.arange(chain_mcmc_priors.shape[0]), chain_mcmc_priors[:, 0]) # Should be white noise
+
+plt.subplot(1,2,2)
+plt.plot(np.arange(chain_mcmc_priors.shape[0]), abs(np.fft.fft(chain_mcmc_priors[:, 0])))
+plt.yscale('log'); plt.xscale('log'); # plt.xlim(1e-3, 1e3)
+
+plt.savefig("./H0 chain and fft 5000 its w tau prior.png")
+
+# Importance sample our original chain:
+    
+chisq_imp_samp = np.zeros(len(chisq_mcmc_priors))
+
+for i in range(len(chisq_mcmc_priors)):
+    # This is essentially returning delta chisq for for the parameters
+    # from each step in the chain:
+    chisq_imp_samp[i] = np.sum(((chain_mcmc_priors[i, :] - m_priors)/m_priors_errs)**2)
+
+weight = np.exp(-0.5 * chisq_imp_samp)
+
+m_imp_samp = np.zeros(len(m_mcmc_priors))
+for i in range(len(m_mcmc_priors)):
+    m_imp_samp[i] = np.sum(weight * chain1_mcmc[:, i])/np.sum(weight)
+
+print(f'Importance sampled parameters are {m_imp_samp}')
+
+f = open('planck_fit_params_imp_samp.txt', 'w')
+f.write('Importance sampling original chain in Q3:')
+f.write(f'\nImportance sampled parameters are {m_imp_samp}')
+f.close()
+
+t2 = datetime.datetime.now()
+
+print(f'Total runtime of ps4 was {t2-t1}')
