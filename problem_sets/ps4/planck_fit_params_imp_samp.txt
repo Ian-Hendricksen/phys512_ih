@@ -1,3 +1,3 @@
 Importance sampling original chain in Q3:
-Importance sampled parameters are [6.94465037e+01 2.20817868e-02 1.19208613e-01 6.93584456e-02
- 2.14294128e-09 9.52579222e-01]
+Importance sampled parameters are [6.19163431e+01 2.21653108e-02 1.39774664e-01 5.92527370e-02
+ 2.22639380e-09 9.11027855e-01]

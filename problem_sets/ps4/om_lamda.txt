@@ -1,2 +1,2 @@
-Best-fit for dark energy density (om_lamda) is 0.7070010491322185
-Dark energy density error is 0.0003086339399286392
+Best-fit for dark energy density (om_lamda) is 0.6139703348532419
+Dark energy density error is 0.01212606757309287
