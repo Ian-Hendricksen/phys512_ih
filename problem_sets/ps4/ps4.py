@@ -105,6 +105,7 @@ def lvmq(m, fun, deriv_fun, x_data, y_data, y_errs, n):
     
     # m: model parameters (guess)
     # fun: function to fit
+    # deriv_fun: numerical derivative function
     # n: number of iterations
     
     t1 = datetime.datetime.now()
@@ -247,8 +248,10 @@ def mcmc(m, fun, curv, x_data, y_data, y_errs, n, m_priors = None, m_priors_errs
         print('-------------')
         print('Step', i)
         
-        m_trial = m + 0.1 * L @ np.random.randn(nm) # draw trial steps from curvature
-                                                    # matrix from lvmq; need to scale it? --> yes
+        k = 0.1
+        
+        m_trial = m + k * L @ np.random.randn(nm) # draw trial steps from curvature
+                                                    # matrix from lvmq, scaled by k
         if m_priors is None:
             if m_trial[3] < 0.01:
                 m_trial[3] = 0.01 # This constraint makes my chains happier
