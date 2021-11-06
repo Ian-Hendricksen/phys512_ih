@@ -12,6 +12,12 @@ import h5py
 from glob import glob
 # from scipy.signal import tukey
 
+import sys
+os.chdir('C:\\Users\\Admin\\Downloads\\MSc Year 1 (Downloads)\\Phys 512\\phys512_ih\\problem_sets\\ps6')
+orig_stdout = sys.stdout
+txt = open('A6 Print Output.txt', 'w')
+sys.stdout = txt
+
 #-----------------------------------------------------------------------------
 # This section will contain general functions to be called at any necessary 
 # point in the loop.
@@ -128,18 +134,19 @@ for template in all_templates:
         # Smooth data
         print('Smoothing...')
             
-        ftsq = abs(st_w_ft)**2 # |FT|^2
-
+        ftsq = abs(st_w_ft)**2 # |FT|^2, power spectrum
+        
+        # I smooth the power spectrum by convolving the power spectrum
+        # with a small rectangular pulse. This reduces the crazy noisy 
+        # nature of the power spectrum while preserving it's overall shape.
+        
         smooth = 10
         ftsq_smooth = np.convolve(ftsq, np.ones(smooth)/smooth, mode = 'same')
-        # st_ws_ft = st_w_ft / np.sqrt(ftsq_smooth)
         
-        # ftsq_smooth = np.zeros(len(ftsq))
-        # for i in range(100): 
-        #     ftsq_smooth=(ftsq_smooth+np.roll(ftsq_smooth,1)+np.roll(ftsq_smooth,-1))/3 # --> this is actually doing the smoothing! need a better method
-        
-        # plt.plot(ftsq_smooth, linestyle = '--')
-        # plt.plot(ftsq)
+        # f1 = plt.figure()
+        # plt.plot(abs(ftsq), label = 'Power Spectrum')
+        # plt.plot(abs(ftsq_smooth), label = 'Smoothed Power Spectrum')
+        # plt.legend()
         
         # Whiten FT of windowed strain and template:
         print('Whitening...')
@@ -154,9 +161,10 @@ for template in all_templates:
         print('Creating matched filter...')
         
         mf = np.fft.fftshift(np.fft.ifft(st_wsw_ft * np.conj(tft_white)))
-        f = plt.figure()
-        plt.plot(abs((mf)), label = f'{file}')
-        plt.legend()
+        # f = plt.figure()
+        # plt.plot(abs((mf)), label = f'{file}')
+        # plt.legend()
+        # plt.savefig(f'{file}.png')
         
         print('---------------------------------')
         print('(c) Estimating noise for', file[0])
@@ -171,33 +179,79 @@ for template in all_templates:
         print('---------------------------------')
         print('(d) Comparing calculated to analytical SNR\'s for', file[0])
         
-        # sigmasq = 1*(template_fft * template_fft.conjugate() / power_vec).sum() * df
-        # sigma = np.sqrt(np.abs(sigmasq))
-        # SNR_complex = optimal_time/sigma
-        
         freqs = np.fft.fftfreq(len(tft_white))
         df = freqs[1] - freqs[0]
         
-        sig = np.sqrt(abs((tft_white*np.conj(tft_white)/ftsq).sum()))
-        SNR_an = (mf/ftsq) / sig
-        SNR_an_max = abs(max(SNR_an))
+        sig = np.sqrt(abs(((tft_white*np.conj(tft_white)/ftsq_smooth).sum())*df))
+        SNR_an = (abs(mf)/ftsq_smooth) / sig
+        SNR_an_max = max(SNR_an)
         print('Difference between analytical & estimated SNR is', SNR_est_max - SNR_an_max) # This can't be right
         
         print('---------------------------------')
         print('(e) Finding half-weight frequency for', file[0])
         
+        # If we consider sqrt(ftsq_smooth) (sqrt of smoothed power spectrum) 
+        # to be the weights,
+        
+        weights = np.sqrt(ftsq_smooth) # get weights
+        weights_sum = weights.sum() # get sum of those weights
+        
+        sum_weights_bel = np.zeros(len(weights)) # empty arrays, storing the
+        sum_weights_abv = np.zeros(len(weights)) # sum of weights above and 
+                                                 # below a given index
+        
+        # Get sum of weights above and below index, divided by
+        # the total weight (sort of normalization):
+        
+        for i in range(len(weights)):
+            sum_weights_bel[i] = weights[0:i].sum()/weights_sum
+            sum_weights_abv[i] = weights[i+1:len(weights)].sum()/weights_sum
+            
+        # Find the index where the normalized sum of the weights above and 
+        # below that index is closest to 0.5 (since it won't be exact). We 
+        # can do this by finding the index of the minimum of the absolute value
+        # of the difference between these values and 0.5 is (sort of a 
+        # mouthful). The absolute prevents false positives for values below
+        # 0.5 and makes sure that the minimum value is indeed the index of the
+        # closest value to 0.5.
+            
+        min_swb = np.argmin(abs(sum_weights_bel - 0.5))
+        min_swa = np.argmin(abs(sum_weights_abv - 0.5))
+        
+        # The index of the half-weight frequency occurs at the lower index
+        # since sum_weight_abv goes from i+1 to the end of weights array
+        
+        if min_swb - min_swa == 1:
+            print('Half-weight frequency is', freqs[min_swb])
+        else:
+            print('Half-weight frequency not found')
+        
         print('---------------------------------')
         print('(f) Determining arrival time for', file[0])
         
-        t_arr = dt*(np.argmax(SNR_est)) # Not necessarily arrival time! This isn't a spike, but a round peak
+        SNR_tol = SNR_est_max - 1 # Peak values should have SNR that's greater
+                                  # than max SNR - 1 (sort of arbitrary)
+        ts = []
+        for i in range(len(SNR_est)):
+            if SNR_est[i] > SNR_tol:
+                ts.append(i)
+        
+        ts = dt*np.array([ts])
+        t_arr = np.mean(ts) # Arrival time
         t_arrs.append(t_arr)
         print(f'Arrival time is {t_arr}s')
         
+    print('---------------------------------')
+    SNRs = np.array(SNRs)
+    SNR_combo = SNRs.sum()
+    print(f'SNR of combined detectors for template {template} is {SNR_combo}')
+    
+    # print('---------------------------------')
+    # t_arrs = np.array(t_arrs)
+    # print(f'The average arrival time is {np.mean(t_arrs)} +/- {abs(t_arrs[0] - t_arrs[1])}')
         
-        
-
-# Make sure to write everything that is printed and save all relevant info
-
-# # Changing back to my ps6 directory:
-# cwd = 'C:\\Users\\Admin\\Downloads\\MSc Year 1 (Downloads)\\Phys 512\\phys512_ih\\problem_sets\\ps6'
-# os.chdir(cwd)
+# Make sure to write everything that is printed and save all relevant info:
+    
+os.chdir('C:\\Users\\Admin\\Downloads\\MSc Year 1 (Downloads)\\Phys 512\\phys512_ih\\problem_sets\\ps6')
+sys.stdout = orig_stdout
+txt.close()

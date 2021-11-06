@@ -1,0 +1,200 @@
+==========================================================
+-----------------Using template GW150914-----------------
+==========================================================
+Reading file H-H1_LOSC_4_V2-1126259446-32.hdf5 --> H
+---------------------------------
+(a) Determining noise model for H
+Windowing...
+Smoothing...
+Whitening...
+---------------------------------
+(b) Searching event
+Creating matched filter...
+---------------------------------
+(c) Estimating noise for H
+Scatter in the matched filter is 0.09360821522669789
+Max SNR is 25.703346948754437
+---------------------------------
+(d) Comparing calculated to analytical SNR's for H
+Difference between analytical & estimated SNR is -9.562255395040646e+19
+---------------------------------
+(e) Finding half-weight frequency for H
+Half-weight frequency is 0.0034331751529670263
+---------------------------------
+(f) Determining arrival time for H
+Arrival time is 8.2197265625s
+==========================================================
+Reading file L-L1_LOSC_4_V2-1126259446-32.hdf5 --> L
+---------------------------------
+(a) Determining noise model for L
+Windowing...
+Smoothing...
+Whitening...
+---------------------------------
+(b) Searching event
+Creating matched filter...
+---------------------------------
+(c) Estimating noise for L
+Scatter in the matched filter is 0.07966586237618262
+Max SNR is 19.250963328569135
+---------------------------------
+(d) Comparing calculated to analytical SNR's for L
+Difference between analytical & estimated SNR is -5.403873727586371e+19
+---------------------------------
+(e) Finding half-weight frequency for L
+Half-weight frequency is 0.00291438424096312
+---------------------------------
+(f) Determining arrival time for L
+Arrival time is 8.2161865234375s
+---------------------------------
+SNR of combined detectors for template GW150914 is 44.95431027732357
+==========================================================
+-----------------Using template GW151226-----------------
+==========================================================
+Reading file H-H1_LOSC_4_V2-1135136334-32.hdf5 --> H
+---------------------------------
+(a) Determining noise model for H
+Windowing...
+Smoothing...
+Whitening...
+---------------------------------
+(b) Searching event
+Creating matched filter...
+---------------------------------
+(c) Estimating noise for H
+Scatter in the matched filter is 0.042025619407852564
+Max SNR is 14.658781532770124
+---------------------------------
+(d) Comparing calculated to analytical SNR's for H
+Difference between analytical & estimated SNR is -6.9020938864184566e+19
+---------------------------------
+(e) Finding half-weight frequency for H
+Half-weight frequency is 0.0034179165967316173
+---------------------------------
+(f) Determining arrival time for H
+Arrival time is 8.3238525390625s
+==========================================================
+Reading file L-L1_LOSC_4_V2-1135136334-32.hdf5 --> L
+---------------------------------
+(a) Determining noise model for L
+Windowing...
+Smoothing...
+Whitening...
+---------------------------------
+(b) Searching event
+Creating matched filter...
+---------------------------------
+(c) Estimating noise for L
+Scatter in the matched filter is 0.0292481061017333
+Max SNR is 9.160866293492939
+---------------------------------
+(d) Comparing calculated to analytical SNR's for L
+Difference between analytical & estimated SNR is -6.80823022760185e+19
+---------------------------------
+(e) Finding half-weight frequency for L
+Half-weight frequency is 0.003601019271556525
+---------------------------------
+(f) Determining arrival time for L
+Arrival time is 8.3232421875s
+---------------------------------
+SNR of combined detectors for template GW151226 is 23.819647826263065
+==========================================================
+-----------------Using template GW170104-----------------
+==========================================================
+Reading file H-H1_LOSC_4_V1-1167559920-32.hdf5 --> H
+---------------------------------
+(a) Determining noise model for H
+Windowing...
+Smoothing...
+Whitening...
+---------------------------------
+(b) Searching event
+Creating matched filter...
+---------------------------------
+(c) Estimating noise for H
+Scatter in the matched filter is 0.07535295158200803
+Max SNR is 11.295196434036676
+---------------------------------
+(d) Comparing calculated to analytical SNR's for H
+Difference between analytical & estimated SNR is -2.611651239616352e+20
+---------------------------------
+(e) Finding half-weight frequency for H
+Half-weight frequency is 0.0039061903962647054
+---------------------------------
+(f) Determining arrival time for H
+Arrival time is 8.3043212890625s
+==========================================================
+Reading file L-L1_LOSC_4_V1-1167559920-32.hdf5 --> L
+---------------------------------
+(a) Determining noise model for L
+Windowing...
+Smoothing...
+Whitening...
+---------------------------------
+(b) Searching event
+Creating matched filter...
+---------------------------------
+(c) Estimating noise for L
+Scatter in the matched filter is 0.09532580955878976
+Max SNR is 12.210187397635186
+---------------------------------
+(d) Comparing calculated to analytical SNR's for L
+Difference between analytical & estimated SNR is -3.22817552764955e+19
+---------------------------------
+(e) Finding half-weight frequency for L
+Half-weight frequency is 0.00010680989364786304
+---------------------------------
+(f) Determining arrival time for L
+Arrival time is 8.3055419921875s
+---------------------------------
+SNR of combined detectors for template GW170104 is 23.505383831671864
+==========================================================
+-----------------Using template LVT151012-----------------
+==========================================================
+Reading file H-H1_LOSC_4_V2-1128678884-32.hdf5 --> H
+---------------------------------
+(a) Determining noise model for H
+Windowing...
+Smoothing...
+Whitening...
+---------------------------------
+(b) Searching event
+Creating matched filter...
+---------------------------------
+(c) Estimating noise for H
+Scatter in the matched filter is 0.06072410100124217
+Max SNR is 9.999741586957164
+---------------------------------
+(d) Comparing calculated to analytical SNR's for H
+Difference between analytical & estimated SNR is -6.130509729234388e+19
+---------------------------------
+(e) Finding half-weight frequency for H
+Half-weight frequency is 0.0033416238155545724
+---------------------------------
+(f) Determining arrival time for H
+Arrival time is 8.22119140625s
+==========================================================
+Reading file L-L1_LOSC_4_V2-1128678884-32.hdf5 --> L
+---------------------------------
+(a) Determining noise model for L
+Windowing...
+Smoothing...
+Whitening...
+---------------------------------
+(b) Searching event
+Creating matched filter...
+---------------------------------
+(c) Estimating noise for L
+Scatter in the matched filter is 0.05414792232934464
+Max SNR is 8.296389893272456
+---------------------------------
+(d) Comparing calculated to analytical SNR's for L
+Difference between analytical & estimated SNR is -6.968764381547079e+19
+---------------------------------
+(e) Finding half-weight frequency for L
+Half-weight frequency is 0.003265331034377527
+---------------------------------
+(f) Determining arrival time for L
+Arrival time is 8.221435546875s
+---------------------------------
+SNR of combined detectors for template LVT151012 is 18.29613148022962
