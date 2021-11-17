@@ -41,13 +41,13 @@ x = np.tan(y)
 # P(x) = 1/(1+x^2) Lorentzian goes to 1 at 0, so this is better than a 
 # power law, which goes to inf at 0 and becomes difficult to deal with.
 
-P = 1.5/(1+x**2)
+P = 1.1/(1+x**2)
 Pp = np.random.rand(n)*P
 
-bins=np.linspace(0,10,501)
-cents=0.5*(bins[1:]+bins[:-1])
+bins=np.linspace(0, 10, 501) # Change number of bins?
+cents=0.5*(bins[1:] + bins[:-1])
 
-lor = 1.5/(1 + cents**2)
+lor = 1.1/(1 + cents**2)
 exp = np.exp(-cents)
 
 f3 = plt.figure()
@@ -61,15 +61,50 @@ plt.savefig('rand_points_under_bound.png')
 accept = Pp < np.exp(-x)
 x_acc = x[accept]
 
-hist, bin_edges = np.histogram(x_acc, bins)
+hist, bin_edges = np.histogram(x_acc, bins, range = (0, 10))
 hist = hist/np.sum(hist)
 exp = exp/np.sum(exp)
 
 f4 = plt.figure()
-plt.scatter(cents, hist, marker = '.')
-plt.plot(cents, exp)
+plt.bar(cents, hist, 0.05)
+plt.plot(cents, exp, c = 'r')
+plt.savefig('hist_deviates_100000.png') 
 
-# How efficient can I make this? (Part of the question)
+# How efficient can I make this? --> n = 10000 appears to be lower limit
+# for deviates to be considered reasonably exponentially distributed. Could
+# use a bounding function that is closer in shape to an exponential, but 
+# the lorentzian does a pretty good job of this as is. A Gaussian ends up
+# dipping below the exponential and requires a relatively large sigma to
+# remain above the exp, and a power law goes to infinity at 0, undesirable 
+# behavior. The lorentzian is greater than the exp for all values (at least
+# those I use here) and reasonably follows a decaying exponential.
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # (3)
+
+u = np.linspace(0, 1, 1000)
+u = u[1:]
+# u < exp(-x), where x = v/u
+# ln(u) = -x = -v/u --> v = -uln(u)
+
+v = -u*np.log(u)
+vmax = max(v)
+limits = [min(v), max(v)]
+print('limits on v are', limits)
+
+# f6 = plt.figure()
+# plt.plot(u, v)
+# plt.plot(u, -v)
+
+n2 = 100000
+u2 = np.random.rand(n2)
+v2 = np.random.rand(n2)*vmax
+x2 = v2/u2
+accept2 = u2 < np.exp(-x2)
+x2_acc = x2[accept2]
+
+hist2, bin_edges2 = np.histogram(x2_acc, 50, range = (0, 3))
+cents2 = 0.5*(bin_edges2[1:] + bin_edges2[:-1])
+
+f7 = plt.figure()
+plt.bar(cents2, hist2, 0.05)
