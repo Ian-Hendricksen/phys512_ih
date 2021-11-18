@@ -29,12 +29,10 @@ Z = np_rand_points[:, 2]
 # ax = f2.add_subplot(111, projection='3d')
 # ax.scatter(X, Y, Z, s = 1)
 
-# If time, check to see if you can get the last bit of the question to work.
-
 #-----------------------------------------------------------------------------
 # (2)
 
-n = 100000
+n = 10000
 y = np.pi*(np.random.rand(n)-0.5)
 x = np.tan(y)
 
@@ -44,7 +42,7 @@ x = np.tan(y)
 P = 1.1/(1+x**2)
 Pp = np.random.rand(n)*P
 
-bins=np.linspace(0, 10, 501) # Change number of bins?
+bins=np.linspace(0, 10, 51) 
 cents=0.5*(bins[1:] + bins[:-1])
 
 lor = 1.1/(1 + cents**2)
@@ -66,9 +64,10 @@ hist = hist/np.sum(hist)
 exp = exp/np.sum(exp)
 
 f4 = plt.figure()
-plt.bar(cents, hist, 0.05)
-plt.plot(cents, exp, c = 'r')
-plt.savefig('hist_deviates_100000.png') 
+plt.bar(cents, hist, 0.15, label = 'Histogram of Deviates')
+plt.plot(cents, exp, c = 'r', label = 'Exponential')
+plt.legend()
+plt.savefig('hist_deviates_10000.png') 
 
 # How efficient can I make this? --> n = 10000 appears to be lower limit
 # for deviates to be considered reasonably exponentially distributed. Could
@@ -92,10 +91,6 @@ vmax = max(v)
 limits = [min(v), max(v)]
 print('limits on v are', limits)
 
-# f6 = plt.figure()
-# plt.plot(u, v)
-# plt.plot(u, -v)
-
 n2 = 100000
 u2 = np.random.rand(n2)
 v2 = np.random.rand(n2)*vmax
@@ -103,8 +98,33 @@ x2 = v2/u2
 accept2 = u2 < np.exp(-x2)
 x2_acc = x2[accept2]
 
-hist2, bin_edges2 = np.histogram(x2_acc, 50, range = (0, 3))
+accept2_inds = np.where(accept2 == True)[0]
+acc_percent = 100*len(accept2_inds)/n2
+
+print(f'From {n2} points, {len(accept2_inds)} were kept --> {acc_percent}% kept.')
+
+# This provides a good visualization for what's going on:
+    
+f6 = plt.figure()
+plt.plot(u, v, c = 'r')
+plt.plot(u, -v, c = 'r')
+plt.scatter(u2,v2)
+plt.plot(u,v, c='r')
+plt.scatter(u2[accept2], v2[accept2])
+plt.savefig('uv_bound.png')
+
+hist2, bin_edges2 = np.histogram(x2_acc, 51, range = (0, 3))
 cents2 = 0.5*(bin_edges2[1:] + bin_edges2[:-1])
+hist2 = hist2/np.sum(hist2)
+
+# Maybe we have to multiply cents2 by 2 in the exponential here because
+# we have to consider the 2 regions in u,v space?
+
+exp2 = np.exp(-2*cents2)*np.sum(accept2)*(cents2[2]-cents2[1]) 
+exp2 = exp2/np.sum(exp2)
 
 f7 = plt.figure()
-plt.bar(cents2, hist2, 0.05)
+plt.bar(cents2, hist2, 0.05, label = 'Histogram of Deviates')
+plt.plot(cents2, exp2, c = 'r', label = 'Exponential')
+plt.legend()
+# plt.savefig('ratio_of_uniforms_hist_100000.png')
