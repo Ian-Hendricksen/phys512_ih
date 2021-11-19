@@ -101,7 +101,7 @@ x2_acc = x2[accept2]
 accept2_inds = np.where(accept2 == True)[0]
 acc_percent = 100*len(accept2_inds)/n2
 
-print(f'From {n2} points, {len(accept2_inds)} were kept --> {acc_percent}% kept.')
+print(f'From {n2} points, acceptance rate is {acc_percent}%.')
 
 # This provides a good visualization for what's going on:
     
@@ -118,7 +118,8 @@ cents2 = 0.5*(bin_edges2[1:] + bin_edges2[:-1])
 hist2 = hist2/np.sum(hist2)
 
 # Maybe we have to multiply cents2 by 2 in the exponential here because
-# we have to consider the 2 regions in u,v space?
+# we have to consider the 2 regions in u,v space? In any case, this seems to
+# make things work!
 
 exp2 = np.exp(-2*cents2)*np.sum(accept2)*(cents2[2]-cents2[1]) 
 exp2 = exp2/np.sum(exp2)
