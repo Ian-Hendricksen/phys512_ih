@@ -32,7 +32,7 @@ Z = np_rand_points[:, 2]
 #-----------------------------------------------------------------------------
 # (2)
 
-n = 10000
+n = 100000
 y = np.pi*(np.random.rand(n)-0.5)
 x = np.tan(y)
 
@@ -59,6 +59,11 @@ plt.savefig('rand_points_under_bound.png')
 accept = Pp < np.exp(-x)
 x_acc = x[accept]
 
+accept_inds = np.where(accept == True)[0]
+acc_percent = 100*len(accept_inds)/n
+
+print(f'(2) From {n} points, acceptance rate is {acc_percent}%.')
+
 hist, bin_edges = np.histogram(x_acc, bins, range = (0, 10))
 hist = hist/np.sum(hist)
 exp = exp/np.sum(exp)
@@ -67,7 +72,7 @@ f4 = plt.figure()
 plt.bar(cents, hist, 0.15, label = 'Histogram of Deviates')
 plt.plot(cents, exp, c = 'r', label = 'Exponential')
 plt.legend()
-plt.savefig('hist_deviates_10000.png') 
+# plt.savefig('hist_deviates_10000.png') 
 
 # How efficient can I make this? --> n = 10000 appears to be lower limit
 # for deviates to be considered reasonably exponentially distributed. Could
@@ -101,7 +106,7 @@ x2_acc = x2[accept2]
 accept2_inds = np.where(accept2 == True)[0]
 acc_percent = 100*len(accept2_inds)/n2
 
-print(f'From {n2} points, acceptance rate is {acc_percent}%.')
+print(f'(3) From {n2} points, acceptance rate is {acc_percent}%.')
 
 # This provides a good visualization for what's going on:
     
